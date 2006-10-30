@@ -24,6 +24,7 @@ let s:versionRegexp = '\.[12]\d\d\d\d\d\d\d[a-z]$'
 let s:versionFileGlob = '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]'
 let s:versionLength = 10 " 1 dot + 4 year + 2 month + 2 day + 1 letter
 
+"- conversion functions -------------------------------------------------------
 function! s:GetFilename( filespec )
     if a:filespec =~ s:versionRegexp
 	return strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
@@ -40,6 +41,27 @@ function! s:GetVersion( filespec )
     endif
 endfunction
 
+"------------------------------------------------------------------------------
+function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage )
+    if ! empty( s:GetVersion( a:filespec ) )
+	echohl Error
+	echomsg a:notOriginalMessage
+	echohl None
+	return ''
+    endif
+
+    let l:predecessor = s:GetPredecessorForFile( a:filespec )
+    if empty( l:predecessor )
+	echohl Error
+	echomsg "No predecessor found for file '" . a:filespec . "'."
+	echohl None
+	return ''
+    endif
+
+    return l:predecessor
+endfunction
+
+"------------------------------------------------------------------------------
 function! s:GetAllVersionsForFile( filespec )
     let l:backupfiles = split( glob( a:filespec . s:versionFileGlob ), "\n" )
     " Although the glob should already be sorted alphabetically in ascending
@@ -187,18 +209,8 @@ function! s:ListVersions( filespec )
 endfunction
 
 function! s:IsBackedUp( filespec )
-    if ! empty( s:GetVersion( a:filespec ) )
-	echohl Error
-	echomsg 'You can only check the backup status of the original file, not of backups!'
-	echohl None
-	return
-    endif
-
-    let l:predecessor = s:GetPredecessorForFile( a:filespec )
+    let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:filespec, 'You can only check the backup status of the original file, not of backups!' )
     if empty( l:predecessor )
-	echohl Error
-	echomsg "No predecessor found for file '" . expand('%') . "'."
-	echohl None
 	return
     endif
 
@@ -219,6 +231,30 @@ function! s:IsBackedUp( filespec )
     endif
 endfunction
 
+function! s:RestoreFromPred( filespec )
+    let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:filespec, 'You can only restore the original file, not a backup!' )
+    if empty( l:predecessor )
+	return
+    endif
+
+    let l:response = confirm( "Really override this file with backup '" . s:GetVersion( l:predecessor ) . "'?", "&No\n&Yes", 1, 'Question' )
+    if l:response != 2
+	echomsg 'Restore canceled. '
+	return
+    endif
+
+    normal ggdG
+    " :read requires the filespec without quotes. 
+    execute '0r ' . l:predecessor
+    write
+endfunction
+
+function! s:RestoreThisBackup( filespec )
+endfunction
+
+
+"- commands -------------------------------------------------------------------
+
 " Performs a diff of the current file (which may be the current version or an
 " older backup) with the previous version. The diff is done inside VIM, with a
 " new diffsplit being opened. 
@@ -234,6 +270,10 @@ command! WriteBackupListVersions :call <SID>ListVersions(expand('%'))
 " be the latest version). 
 command! WriteBackupIsBackedUp :call <SID>IsBackedUp(expand('%'))
 
-"command! WriteBackupRestoreFromPred
-"command! WriteBackupRestoreThisBackup
+" Overwrites the current file (which must be the latest version) with its latest
+" backup. 
+command! WriteBackupRestoreFromPred :call <SID>RestoreFromPred(expand('%'))
+
+" Restores the current file as the latest version, which will be overwritten. 
+command! WriteBackupRestoreThisBackup :call <SID>RestoreThisBackup(expand('%'))
 
