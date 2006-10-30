@@ -13,27 +13,31 @@ let loaded_writebackupVersionControl = 1
 
 " Allow user to specify diffsplit of horiz. or vert.
 if !exists('g:writebackup_DiffVertSplit')
-  let g:writebackup_DiffVertSplit = 1  " Default to split for diff vertically. 
+    let g:writebackup_DiffVertSplit = 1  " Default to split for diff vertically. 
 endif
 
+let s:versionRegexp = '\.[12]\d\d\d\d\d\d\d[a-z]$'
+let s:versionFileGlob = '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]'
+let s:versionLength = 10 " 1 dot + 4 year + 2 month + 2 day + 1 letter
+
 function! s:GetFilename( filespec )
-    if a:filespec =~ '\.[12]\d\d\d\d\d\d\d[a-z]$'
-	return strpart( a:filespec, 0, len( a:filespec ) - 10 )
+    if a:filespec =~ s:versionRegexp
+	return strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
     else
 	return a:filespec
     endif
 endfunction
 
 function! s:GetVersion( filespec )
-    if a:filespec =~ '\.[12]\d\d\d\d\d\d\d[a-z]$'
-	return strpart( a:filespec, len( a:filespec ) - 10 + 1 )
+    if a:filespec =~ s:versionRegexp
+	return strpart( a:filespec, len( a:filespec ) - s:versionLength + 1 )
     else
 	return ''
     endif
 endfunction
 
 function! s:GetAllVersionsForFile( filespec )
-    let l:backupfiles = split( glob( a:filespec . '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]' ), "\n" )
+    let l:backupfiles = split( glob( a:filespec . s:versionFileGlob ), "\n" )
     " Although the glob should already be sorted alphabetically in ascending
     " order, we'd better be sure and sort the list on our own, too. 
     let l:backupfiles = sort( l:backupfiles )
