@@ -1,12 +1,17 @@
 " Version control functions (diff, restore) for backups with date file extension
 " (format '.YYYYMMDD[a-z]' in the same directory as the original file itself. 
 "
+" TODO:
+" - test on Unix
+" - test restore on Windows with cwd on \\host\share
+"
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
 "	0.02	31-Oct-2006	Added WriteBackupListVersions. 
 "				Added EchoElapsedTimeSinceVersion as an add-on
 "				to WriteBackupListVersions. 
 "				Added WriteBackupIsBackedUp. 
+"				Added RestoreFromPred and RestoreThisBackup. 
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
@@ -231,22 +236,54 @@ function! s:IsBackedUp( filespec )
     endif
 endfunction
 
+function! s:Restore( source, target, confirmationMessage )
+    let l:response = confirm( a:confirmationMessage, "&No\n&Yes", 1, 'Question' )
+    if l:response != 2
+	echomsg 'Restore canceled. '
+	return 0
+    endif
+
+    " We could restore using only VIM functionality:
+    "	edit! a:target
+    " 	normal ggdG
+    " 	0read a:source
+    " 	write
+    " But that would make the target's modification date different from the one
+    " of the source, which would fool superficial synchronization tools. 
+    " In addition, there's the (small) risk that VIM autocmds or settings like
+    " 'fileencoding' or 'fileformat' are now different from when the backup was
+    " written, and may thus lead to conversion errors or different file
+    " contents. 
+    " Thus, we invoke an external command to create a perfect copy.
+    " Unfortunately, this introduces platform-specific code. 
+    if has('win32')
+	let l:copyCmd = 'copy /Y "' . a:source . '" "' . a:target . '"'
+    elseif has('unix')
+	let l:copyCmd = 'cp "' . a:source . '" "' . a:target . '"'
+    else
+	throw 'Unsupported operating system type.'
+    endif
+
+    let l:cmdOutput = system( l:copyCmd )
+    if v:shell_error != 0
+	echohl Error
+	echomsg 'Failed to restore file: ' . l:cmdOutput
+	echohl None
+	return 0
+    else
+	return 1
+    endif
+endfunction
+
 function! s:RestoreFromPred( filespec )
     let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:filespec, 'You can only restore the original file, not a backup!' )
     if empty( l:predecessor )
 	return
     endif
 
-    let l:response = confirm( "Really override this file with backup '" . s:GetVersion( l:predecessor ) . "'?", "&No\n&Yes", 1, 'Question' )
-    if l:response != 2
-	echomsg 'Restore canceled. '
-	return
+    if s:Restore( l:predecessor, a:filespec, "Really override this file with backup '" . s:GetVersion( l:predecessor ) . "'?" )
+	edit!
     endif
-
-    normal ggdG
-    " :read requires the filespec without quotes. 
-    execute '0r ' . l:predecessor
-    write
 endfunction
 
 function! s:RestoreThisBackup( filespec )
@@ -259,28 +296,9 @@ function! s:RestoreThisBackup( filespec )
 	return
     endif
 
-    let l:response = confirm( "Really override '" . l:original . "' with this backup?", "&No\n&Yes", 1, 'Question' )
-    if l:response != 2
-	echomsg 'Restore canceled. '
-	return
+    if s:Restore( a:filespec, l:original, "Really override '" . l:original . "' with this backup '" . l:currentVersion . "'?" )
+	execute 'edit! ' . l:original
     endif
-
-    if has('win32')
-	let l:copyCmd = 'copy /Y "' . a:filespec . '" "' . l:original . '"'
-    elseif has('unix')
-	let l:copyCmd = 'cp "' . a:filespec . '" "' . l:original . '"'
-    else
-	throw 'Unsupported operating system type.'
-    endif
-    let l:cmdOutput = system( l:copyCmd )
-    if v:shell_error != 0
-	echohl Error
-	echomsg 'Failed to restore file: ' . l:cmdOutput
-	echohl None
-	return
-    endif
-
-    execute 'edit! ' . l:original
 endfunction
 
 
