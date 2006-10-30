@@ -12,6 +12,9 @@
 "				to WriteBackupListVersions. 
 "				Added WriteBackupIsBackedUp. 
 "				Added RestoreFromPred and RestoreThisBackup. 
+"				Optimized away actual diff invocation in
+"				IsBackedUp() for most cases. 
+"				cases
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
@@ -308,6 +311,19 @@ function! s:IsBackedUp( filespec )
 	return
     endif
 
+    " Optimization: First compare the file sizes, as this is much faster than
+    " performing an actual diff; we're not interested in the differences,
+    " anyway, only if there *are* any!
+    if getfsize( l:predecessor ) != getfsize( a:filespec )
+	echohl WarningMsg
+	echomsg "The current version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echohl None
+	return
+    endif
+
+    " Note: We could save the effort of outputting the diff output to the
+    " console if that didn't introduce platform-dependent code (NUL vs.
+    " /dev/null) and meddling with the 'shellredir' setting. 
     let l:diffCmd = 'silent !diff "' . l:predecessor . '" "' . a:filespec . '"'
     execute l:diffCmd
 "****D echo '**** diff return code=' . v:shell_error
@@ -454,3 +470,4 @@ command! WriteBackupRestoreFromPred :call <SID>RestoreFromPred(expand('%'))
 " Restores the current file as the latest version, which will be overwritten. 
 command! WriteBackupRestoreThisBackup :call <SID>RestoreThisBackup(expand('%'))
 
+"command! WriteBackupDeleteLastBackup
