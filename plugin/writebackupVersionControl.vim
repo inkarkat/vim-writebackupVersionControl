@@ -3,6 +3,9 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"	0.02	31-Oct-2006	Added WriteBackupListVersions. 
+"				Added EchoElapsedTimeSinceVersion as an add-on
+"				to WriteBackupListVersions. 
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
@@ -120,28 +123,66 @@ function! s:DiffWithPred( filespec )
     endif
 endfunction
 
+function! s:DualDigit( number )
+    let l:digits = a:number + ''
+    while len( l:digits ) < 2
+	let l:digits = '0' . l:digits
+    endwhile
+    return strpart( l:digits, 0, 2 )
+endfunction
+
+function! s:EchoElapsedTimeSinceVersion( backupFile )
+    let l:timeElapsed = localtime() - getftime( a:backupFile )
+    let l:secondsElapsed = l:timeElapsed % 60
+    let l:minutesElapsed = (l:timeElapsed / 60) % 60
+    let l:hoursElapsed = (l:timeElapsed / 3600) % 24
+    let l:daysElapsed = (l:timeElapsed / (3600 * 24))
+    let l:message = 'The last backup was done '
+    if l:daysElapsed > 0
+	let l:message .= l:daysElapsed . ' days, '
+    endif
+    let l:message .= s:DualDigit(l:hoursElapsed) . ':' . s:DualDigit(l:minutesElapsed) . ':' . s:DualDigit(l:secondsElapsed) . ' ago.'
+
+    echomsg l:message
+endfunction
+
 function! s:ListVersions( filespec )
     let l:currentFilename = s:GetFilename( a:filespec )
+    let l:currentVersion = s:GetVersion( a:filespec )
     let l:backupfiles = s:GetAllVersionsForFile( l:currentFilename )
     if empty( l:backupfiles )
 	echomsg "No backups exist for file '" . s:GetFilename( l:currentFilename ) . "'. "
 	return
     endif
 
-    echomsg "These backups exist for file '" . s:GetFilename( l:currentFilename ) . "': "
+    let l:versionMessageHeader = "These backups exist for file '" . s:GetFilename( l:currentFilename ) . "'"
+    let l:versionMessageHeader .= ( empty(l:currentVersion) ? ': ' : ' (current version is marked >x<): ')
+    echomsg l:versionMessageHeader
     let l:versionMessage = ''
     let l:version = ''
     for l:backupfile in l:backupfiles
 	let l:previousVersion = l:version
 	let l:version = s:GetVersion( l:backupfile )
 	if strpart( l:version, 0, len(l:version) - 1 ) == strpart( l:previousVersion, 0, len(l:previousVersion) - 1 )
-	    let l:versionMessage .= strpart( l:version, len(l:version) - 1 )
+	    let l:versionMessageAddition = strpart( l:version, len(l:version) - 1 )
+	    if l:version == l:currentVersion
+		let l:versionMessageAddition = '>' . l:versionMessageAddition . '<'
+	    endif
+	    let l:versionMessage .= l:versionMessageAddition
 	else
 	    echomsg l:versionMessage 
 	    let l:versionMessage = l:version
+	    if l:version == l:currentVersion
+		let l:versionMessage= strpart( l:versionMessage, 0, len(l:versionMessage) - 1 ). '>' . strpart( l:versionMessage, len(l:versionMessage) - 1 ) . '<'
+	    endif
 	endif
     endfor
     echomsg l:versionMessage
+
+    if empty( l:currentVersion )
+	let l:lastBackupFile = l:backupfiles[ len( l:backupfiles ) - 1 ]
+	call s:EchoElapsedTimeSinceVersion( l:lastBackupFile )
+    endif
 endfunction
 
 command! WriteBackupDiffWithPred :call <SID>DiffWithPred(expand('%'))
