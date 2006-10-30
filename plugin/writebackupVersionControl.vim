@@ -6,6 +6,7 @@
 "	0.02	31-Oct-2006	Added WriteBackupListVersions. 
 "				Added EchoElapsedTimeSinceVersion as an add-on
 "				to WriteBackupListVersions. 
+"				Added WriteBackupIsBackedUp. 
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
@@ -185,8 +186,42 @@ function! s:ListVersions( filespec )
     endif
 endfunction
 
+function! s:IsBackedUp( filespec )
+    if ! empty( s:GetVersion( a:filespec ) )
+	echohl Error
+	echomsg 'You can only check the backup status of the original file, not of backups!'
+	echohl None
+	return
+    endif
+
+    let l:predecessor = s:GetPredecessorForFile( a:filespec )
+    if empty( l:predecessor )
+	echohl Error
+	echomsg "No predecessor found for file '" . expand('%') . "'."
+	echohl None
+	return
+    endif
+
+    let l:diffCmd = 'silent !diff "' . l:predecessor . '" "' . a:filespec . '"'
+    execute l:diffCmd
+"****D echo '**** diff return code=' . v:shell_error
+
+    if v:shell_error == 0
+	echomsg "The current version of '" . a:filespec . "' is identical with the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+    elseif v:shell_error == 1
+	echohl WarningMsg
+	echomsg "The current version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echohl None
+    elseif v:shell_error >= 2
+	echohl Error
+	echomsg "Encountered problems with the 'diff' tool. Unable to compare with latest backup. "
+	echohl None
+    endif
+endfunction
+
 command! WriteBackupDiffWithPred :call <SID>DiffWithPred(expand('%'))
 command! WriteBackupListVersions :call <SID>ListVersions(expand('%'))
+command! WriteBackupIsBackedUp :call <SID>IsBackedUp(expand('%'))
 "command! WriteBackupRestoreFromPred
 "command! WriteBackupRestoreThisBackup
 
