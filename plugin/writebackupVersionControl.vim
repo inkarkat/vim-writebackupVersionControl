@@ -250,6 +250,37 @@ function! s:RestoreFromPred( filespec )
 endfunction
 
 function! s:RestoreThisBackup( filespec )
+    let l:currentVersion = s:GetVersion( a:filespec )
+    let l:original = s:GetFilename( a:filespec )
+    if empty( l:currentVersion )
+	echohl Error
+	echomsg 'You can only restore backup files!'
+	echohl None
+	return
+    endif
+
+    let l:response = confirm( "Really override '" . l:original . "' with this backup?", "&No\n&Yes", 1, 'Question' )
+    if l:response != 2
+	echomsg 'Restore canceled. '
+	return
+    endif
+
+    if has('win32')
+	let l:copyCmd = 'copy /Y "' . a:filespec . '" "' . l:original . '"'
+    elseif has('unix')
+	let l:copyCmd = 'cp "' . a:filespec . '" "' . l:original . '"'
+    else
+	throw 'Unsupported operating system type.'
+    endif
+    let l:cmdOutput = system( l:copyCmd )
+    if v:shell_error != 0
+	echohl Error
+	echomsg 'Failed to restore file: ' . l:cmdOutput
+	echohl None
+	return
+    endif
+
+    execute 'edit! ' . l:original
 endfunction
 
 
