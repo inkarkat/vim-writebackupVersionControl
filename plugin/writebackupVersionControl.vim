@@ -102,26 +102,50 @@ function! s:GetPredecessorForFile( filespec )
     endif
 endfunction
 
-function! s:DiffWithPred()
-    let l:predecessor = s:GetPredecessorForFile( expand("%") )
+function! s:DiffWithPred( filespec )
+    let l:predecessor = s:GetPredecessorForFile( a:filespec )
     if empty( l:predecessor )
 	echohl Error
-	echomsg "No predecessor found for file '" . expand("%") . "'."
+	echomsg "No predecessor found for file '" . expand('%') . "'."
 	echohl None
     else
 "****D echo '**** predecessor is ' . l:predecessor
 	if g:writebackup_DiffVertSplit == 1
-	    let l:splittype=":vert diffsplit "
+	    let l:splittype=':vert diffsplit '
 	else
-	    let l:splittype=":diffsplit "
+	    let l:splittype=':diffsplit '
 	endif
 	execute l:splittype . l:predecessor
 
     endif
 endfunction
 
-command! WriteBackupDiffWithPred :call <SID>DiffWithPred()
+function! s:ListVersions( filespec )
+    let l:currentFilename = s:GetFilename( a:filespec )
+    let l:backupfiles = s:GetAllVersionsForFile( l:currentFilename )
+    if empty( l:backupfiles )
+	echomsg "No backups exist for file '" . s:GetFilename( l:currentFilename ) . "'. "
+	return
+    endif
 
+    echomsg "These backups exist for file '" . s:GetFilename( l:currentFilename ) . "': "
+    let l:versionMessage = ''
+    let l:version = ''
+    for l:backupfile in l:backupfiles
+	let l:previousVersion = l:version
+	let l:version = s:GetVersion( l:backupfile )
+	if strpart( l:version, 0, len(l:version) - 1 ) == strpart( l:previousVersion, 0, len(l:previousVersion) - 1 )
+	    let l:versionMessage .= strpart( l:version, len(l:version) - 1 )
+	else
+	    echomsg l:versionMessage 
+	    let l:versionMessage = l:version
+	endif
+    endfor
+    echomsg l:versionMessage
+endfunction
+
+command! WriteBackupDiffWithPred :call <SID>DiffWithPred(expand('%'))
+command! WriteBackupListVersions :call <SID>ListVersions(expand('%'))
 "command! WriteBackupRestoreFromPred
 "command! WriteBackupRestoreThisBackup
 
