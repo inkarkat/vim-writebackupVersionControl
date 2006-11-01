@@ -12,6 +12,9 @@
 "				to WriteBackupListVersions. 
 "				Added WriteBackupIsBackedUp. 
 "				Added RestoreFromPred and RestoreThisBackup. 
+"				Optimized away actual diff invocation in
+"				IsBackedUp() for most cases. 
+"				cases
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
@@ -30,7 +33,7 @@ let s:versionFileGlob = '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]'
 let s:versionLength = 10 " 1 dot + 4 year + 2 month + 2 day + 1 letter
 
 "- conversion functions -------------------------------------------------------
-function! s:GetFilename( filespec )
+function! s:GetOriginalFilespec( filespec )
     if a:filespec =~ s:versionRegexp
 	return strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
     else
@@ -48,6 +51,21 @@ endfunction
 
 "------------------------------------------------------------------------------
 function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage )
+"*******************************************************************************
+"* PURPOSE:
+"   Checks that a:filespec is not a backup file and that at least one backup for
+"   this file exists. If not, an error message is echoed; in the latter case,
+"   the passed a:notOriginalMessage is used. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   none
+"* EFFECTS / POSTCONDITIONS:
+"   none
+"* INPUTS:
+"   a:filespec
+"   a:notOriginalMessage
+"* RETURN VALUES: 
+"   empty string if verification failed; filespec of predecessor othewise. 
+"*******************************************************************************
     if ! empty( s:GetVersion( a:filespec ) )
 	echohl Error
 	echomsg a:notOriginalMessage
@@ -67,8 +85,22 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 endfunction
 
 "------------------------------------------------------------------------------
-function! s:GetAllVersionsForFile( filespec )
-    let l:backupfiles = split( glob( a:filespec . s:versionFileGlob ), "\n" )
+function! s:GetAllBackupsForFile( originalFilespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Retrieves a list of all filespecs of backup files for a:originalFilespec. 
+"   The list is sorted from oldest to newest backup. The original filespec is
+"   not part of the list. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   none
+"* EFFECTS / POSTCONDITIONS:
+"   none
+"* INPUTS:
+"   a:originalFilespec
+"* RETURN VALUES: 
+"   sorted list of backup filespecs
+"*******************************************************************************
+    let l:backupfiles = split( glob( a:originalFilespec . s:versionFileGlob ), "\n" )
     " Although the glob should already be sorted alphabetically in ascending
     " order, we'd better be sure and sort the list on our own, too. 
     let l:backupfiles = sort( l:backupfiles )
@@ -79,7 +111,7 @@ endfunction
 function! s:RemoveNewerBackupsFrom( backupfiles, currentVersion )
 "*******************************************************************************
 "* PURPOSE:
-"   Removes files that are newer or equal to a:currentVersion. 
+"   Removes files from the passed list that are newer or equal to a:currentVersion. 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   none
 "* EFFECTS / POSTCONDITIONS:
@@ -117,10 +149,10 @@ function! s:GetPredecessorForFile( filespec )
 "* RETURN VALUES: 
 "   filespec to the predecessor version. 
 "*******************************************************************************
-    let l:currentFilename = s:GetFilename( a:filespec )
+    let l:originalFilespec = s:GetOriginalFilespec( a:filespec )
     let l:currentVersion = s:GetVersion( a:filespec )
 
-    let l:backupfiles = s:GetAllVersionsForFile( l:currentFilename )
+    let l:backupfiles = s:GetAllBackupsForFile( l:originalFilespec )
     if ! empty( l:currentVersion )
 	call s:RemoveNewerBackupsFrom( l:backupfiles, l:currentVersion )
     endif
@@ -134,6 +166,18 @@ function! s:GetPredecessorForFile( filespec )
 endfunction
 
 function! s:DiffWithPred( filespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Creates a diff with the predecessor of the passed a:filespec. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:filespec
+"* RETURN VALUES: 
+"   none
+"*******************************************************************************
     let l:predecessor = s:GetPredecessorForFile( a:filespec )
     if empty( l:predecessor )
 	echohl Error
@@ -147,11 +191,22 @@ function! s:DiffWithPred( filespec )
 	    let l:splittype=':diffsplit '
 	endif
 	execute l:splittype . l:predecessor
-
     endif
 endfunction
 
 function! s:DualDigit( number )
+"*******************************************************************************
+"* PURPOSE:
+"   Formats the passed number as a dual-digit string. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"	? Explanation of each argument that isn't obvious.
+"* RETURN VALUES: 
+"	? Explanation of the value returned.
+"*******************************************************************************
     let l:digits = a:number + ''
     while len( l:digits ) < 2
 	let l:digits = '0' . l:digits
@@ -160,6 +215,19 @@ function! s:DualDigit( number )
 endfunction
 
 function! s:EchoElapsedTimeSinceVersion( backupFile )
+"*******************************************************************************
+"* PURPOSE:
+"   Informs the user about the elapsed time since the passed a:backupFile has
+"   been modified. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"	? Explanation of each argument that isn't obvious.
+"* RETURN VALUES: 
+"   none
+"*******************************************************************************
     let l:timeElapsed = localtime() - getftime( a:backupFile )
     let l:secondsElapsed = l:timeElapsed % 60
     let l:minutesElapsed = (l:timeElapsed / 60) % 60
@@ -175,15 +243,27 @@ function! s:EchoElapsedTimeSinceVersion( backupFile )
 endfunction
 
 function! s:ListVersions( filespec )
-    let l:currentFilename = s:GetFilename( a:filespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Shows the user a list of all available versions for a:filespec. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"	? Explanation of each argument that isn't obvious.
+"* RETURN VALUES: 
+"   none
+"*******************************************************************************
+    let l:originalFilespec = s:GetOriginalFilespec( a:filespec )
     let l:currentVersion = s:GetVersion( a:filespec )
-    let l:backupfiles = s:GetAllVersionsForFile( l:currentFilename )
+    let l:backupfiles = s:GetAllBackupsForFile( l:originalFilespec )
     if empty( l:backupfiles )
-	echomsg "No backups exist for file '" . s:GetFilename( l:currentFilename ) . "'. "
+	echomsg "No backups exist for file '" . s:GetOriginalFilespec( l:originalFilespec ) . "'. "
 	return
     endif
 
-    let l:versionMessageHeader = "These backups exist for file '" . s:GetFilename( l:currentFilename ) . "'"
+    let l:versionMessageHeader = "These backups exist for file '" . s:GetOriginalFilespec( l:originalFilespec ) . "'"
     let l:versionMessageHeader .= ( empty(l:currentVersion) ? ': ' : ' (current version is marked >x<): ')
     echomsg l:versionMessageHeader
     let l:versionMessage = ''
@@ -214,11 +294,36 @@ function! s:ListVersions( filespec )
 endfunction
 
 function! s:IsBackedUp( filespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Informs the user whether there exists a backup for the passed a:filespec file. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"	? Explanation of each argument that isn't obvious.
+"* RETURN VALUES: 
+"   none
+"*******************************************************************************
     let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:filespec, 'You can only check the backup status of the original file, not of backups!' )
     if empty( l:predecessor )
 	return
     endif
 
+    " Optimization: First compare the file sizes, as this is much faster than
+    " performing an actual diff; we're not interested in the differences,
+    " anyway, only if there *are* any!
+    if getfsize( l:predecessor ) != getfsize( a:filespec )
+	echohl WarningMsg
+	echomsg "The current version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echohl None
+	return
+    endif
+
+    " Note: We could save the effort of outputting the diff output to the
+    " console if that didn't introduce platform-dependent code (NUL vs.
+    " /dev/null) and meddling with the 'shellredir' setting. 
     let l:diffCmd = 'silent !diff "' . l:predecessor . '" "' . a:filespec . '"'
     execute l:diffCmd
 "****D echo '**** diff return code=' . v:shell_error
@@ -237,6 +342,21 @@ function! s:IsBackedUp( filespec )
 endfunction
 
 function! s:Restore( source, target, confirmationMessage )
+"*******************************************************************************
+"* PURPOSE:
+"   Restores a:source over an existing a:target. The user is asked to confirm
+"   this destructive operation, using the passed a:confirmationMessage. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   none
+"* EFFECTS / POSTCONDITIONS:
+"   Modifies a:target on the file system. 
+"* INPUTS:
+"   a:source filespec
+"   a:target filespec
+"   a:confirmationMessage
+"* RETURN VALUES: 
+"   boolean indicating whether the file has actually been restored. 
+"*******************************************************************************
     let l:response = confirm( a:confirmationMessage, "&No\n&Yes", 1, 'Question' )
     if l:response != 2
 	echomsg 'Restore canceled. '
@@ -275,20 +395,44 @@ function! s:Restore( source, target, confirmationMessage )
     endif
 endfunction
 
-function! s:RestoreFromPred( filespec )
-    let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:filespec, 'You can only restore the original file, not a backup!' )
+function! s:RestoreFromPred( originalFilespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Restores the passed original file with its latest backup. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"	? Explanation of each argument that isn't obvious.
+"* RETURN VALUES: 
+"   none
+"*******************************************************************************
+    let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:originalFilespec, 'You can only restore the original file, not a backup!' )
     if empty( l:predecessor )
 	return
     endif
 
-    if s:Restore( l:predecessor, a:filespec, "Really override this file with backup '" . s:GetVersion( l:predecessor ) . "'?" )
+    if s:Restore( l:predecessor, a:originalFilespec, "Really override this file with backup '" . s:GetVersion( l:predecessor ) . "'?" )
 	edit!
     endif
 endfunction
 
 function! s:RestoreThisBackup( filespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Restores the passed file as the original file. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"	? Explanation of each argument that isn't obvious.
+"* RETURN VALUES: 
+"   none
+"*******************************************************************************
     let l:currentVersion = s:GetVersion( a:filespec )
-    let l:original = s:GetFilename( a:filespec )
+    let l:originalFilespec = s:GetOriginalFilespec( a:filespec )
     if empty( l:currentVersion )
 	echohl Error
 	echomsg 'You can only restore backup files!'
@@ -296,8 +440,8 @@ function! s:RestoreThisBackup( filespec )
 	return
     endif
 
-    if s:Restore( a:filespec, l:original, "Really override '" . l:original . "' with this backup '" . l:currentVersion . "'?" )
-	execute 'edit! ' . l:original
+    if s:Restore( a:filespec, l:originalFilespec, "Really override '" . l:originalFilespec . "' with this backup '" . l:currentVersion . "'?" )
+	execute 'edit! ' . l:originalFilespec
     endif
 endfunction
 
@@ -326,3 +470,4 @@ command! WriteBackupRestoreFromPred :call <SID>RestoreFromPred(expand('%'))
 " Restores the current file as the latest version, which will be overwritten. 
 command! WriteBackupRestoreThisBackup :call <SID>RestoreThisBackup(expand('%'))
 
+"command! WriteBackupDeleteLastBackup
