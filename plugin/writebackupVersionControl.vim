@@ -1,9 +1,6 @@
 " Version control functions (diff, restore) for backups with date file extension
 " (format '.YYYYMMDD[a-z]' in the same directory as the original file itself. 
 "
-" TODO:
-" - test on Unix
-"
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
 "	0.03	02-Nov-2006	ENH: Added user information that IsBackedUp()
@@ -464,7 +461,7 @@ function! s:RestoreThisBackup( filespec )
     endif
 
     if s:Restore( a:filespec, l:originalFilespec, "Really override '" . l:originalFilespec . "' with this backup '" . l:currentVersion . "'?" )
-	execute 'edit! ' . l:originalFilespec
+	execute 'edit! ' . escape( l:originalFilespec, ' \' )
     endif
 endfunction
 
