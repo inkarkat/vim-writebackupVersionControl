@@ -3,16 +3,16 @@
 "
 " TODO:
 " - test on Unix
-" - test restore on Windows with cwd on \\host\share
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
 "	0.03	02-Nov-2006	ENH: Added user information that IsBackedUp()
 "				compares with saved version, not modified
 "				buffer. 
-"				BF: In Restore(), expand filespecs to absolute
-"				paths to avoid problems with cwd, especially on
-"				Windows systems with UNC paths. 
+"				BF: In Restore() and IsBackedUp(), expand
+"				filespecs to absolute paths to avoid problems
+"				with cwd, especially on Windows systems with UNC
+"				paths. 
 "	0.02	31-Oct-2006	Added WriteBackupListVersions. 
 "				Added EchoElapsedTimeSinceVersion as an add-on
 "				to WriteBackupListVersions. 
@@ -333,10 +333,15 @@ function! s:IsBackedUp( filespec )
 	return
     endif
 
+    " Expand filespecs to absolute paths to avoid problems with cwd, especially
+    " on Windows systems with UNC paths. 
+    let l:predecessorFilespec = fnamemodify( l:predecessor, ':p' )
+    let l:originalFilespec = fnamemodify( a:filespec, ':p' )
+
     " Note: We could save the effort of outputting the diff output to the
     " console if that didn't introduce platform-dependent code (NUL vs.
     " /dev/null) and meddling with the 'shellredir' setting. 
-    let l:diffCmd = 'silent !diff "' . l:predecessor . '" "' . a:filespec . '"'
+    let l:diffCmd = 'silent !diff "' . l:predecessorFilespec . '" "' . l:originalFilespec . '"'
     execute l:diffCmd
 "****D echo '**** diff return code=' . v:shell_error
 
