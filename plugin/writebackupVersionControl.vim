@@ -7,6 +7,9 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"	0.03	02-Nov-2006	ENH: Added user information that IsBackedUp()
+"				compares with saved version, not modified
+"				buffer. 
 "	0.02	31-Oct-2006	Added WriteBackupListVersions. 
 "				Added EchoElapsedTimeSinceVersion as an add-on
 "				to WriteBackupListVersions. 
@@ -311,12 +314,18 @@ function! s:IsBackedUp( filespec )
 	return
     endif
 
+    " As we compare the predecessor with the saved original file, not the actual
+    " buffer contents (and this is what the user typically wants; checking
+    " whether it is save to write this buffer because an update exists), we add
+    " a hint to the user message if the buffer is indeed modified. 
+    let l:savedMsg = (&l:modified ? 'saved ' : '') 
+
     " Optimization: First compare the file sizes, as this is much faster than
     " performing an actual diff; we're not interested in the differences,
     " anyway, only if there *are* any!
     if getfsize( l:predecessor ) != getfsize( a:filespec )
 	echohl WarningMsg
-	echomsg "The current version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
 	echohl None
 	return
     endif
@@ -329,10 +338,10 @@ function! s:IsBackedUp( filespec )
 "****D echo '**** diff return code=' . v:shell_error
 
     if v:shell_error == 0
-	echomsg "The current version of '" . a:filespec . "' is identical with the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is identical with the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
     elseif v:shell_error == 1
 	echohl WarningMsg
-	echomsg "The current version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
 	echohl None
     elseif v:shell_error >= 2
 	echohl Error
@@ -459,8 +468,8 @@ command! WriteBackupDiffWithPred :call <SID>DiffWithPred(expand('%'))
 " backup is printed, too. 
 command! WriteBackupListVersions :call <SID>ListVersions(expand('%'))
 
-" Checks whether the latest backup is identical to the current file (which must
-" be the latest version). 
+" Checks whether the latest backup is identical to the (saved version of the)
+" current file (which must be the latest version). 
 command! WriteBackupIsBackedUp :call <SID>IsBackedUp(expand('%'))
 
 " Overwrites the current file (which must be the latest version) with its latest
