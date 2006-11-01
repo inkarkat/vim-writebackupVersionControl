@@ -10,6 +10,9 @@
 "	0.03	02-Nov-2006	ENH: Added user information that IsBackedUp()
 "				compares with saved version, not modified
 "				buffer. 
+"				BF: In Restore(), expand filespecs to absolute
+"				paths to avoid problems with cwd, especially on
+"				Windows systems with UNC paths. 
 "	0.02	31-Oct-2006	Added WriteBackupListVersions. 
 "				Added EchoElapsedTimeSinceVersion as an add-on
 "				to WriteBackupListVersions. 
@@ -385,10 +388,16 @@ function! s:Restore( source, target, confirmationMessage )
     " contents. 
     " Thus, we invoke an external command to create a perfect copy.
     " Unfortunately, this introduces platform-specific code. 
+
+    " Expand filespecs to absolute paths to avoid problems with cwd, especially
+    " on Windows systems with UNC paths. 
+    let l:sourceFilespec = fnamemodify( a:source, ':p' )
+    let l:targetFilespec = fnamemodify( a:target, ':p' )
+
     if has('win32')
-	let l:copyCmd = 'copy /Y "' . a:source . '" "' . a:target . '"'
+	let l:copyCmd = 'copy /Y "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
     elseif has('unix')
-	let l:copyCmd = 'cp "' . a:source . '" "' . a:target . '"'
+	let l:copyCmd = 'cp "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
     else
 	throw 'Unsupported operating system type.'
     endif
