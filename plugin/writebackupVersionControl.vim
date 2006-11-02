@@ -10,6 +10,8 @@
 "				filespecs to absolute paths to avoid problems
 "				with cwd, especially on Windows systems with UNC
 "				paths. 
+"				BF: In DiffWithPred() and RestoreThisBackup(),
+"				convert the filespec to VIM syntax. 
 "	0.02	31-Oct-2006	Added WriteBackupListVersions. 
 "				Added EchoElapsedTimeSinceVersion as an add-on
 "				to WriteBackupListVersions. 
@@ -193,7 +195,7 @@ function! s:DiffWithPred( filespec )
 	else
 	    let l:splittype=':diffsplit '
 	endif
-	execute l:splittype . l:predecessor
+	execute l:splittype . escape( tr( l:predecessor, '\', '/'), ' \' )
     endif
 endfunction
 
@@ -461,7 +463,7 @@ function! s:RestoreThisBackup( filespec )
     endif
 
     if s:Restore( a:filespec, l:originalFilespec, "Really override '" . l:originalFilespec . "' with this backup '" . l:currentVersion . "'?" )
-	execute 'edit! ' . escape( l:originalFilespec, ' \' )
+	execute 'edit! ' . escape( tr( l:originalFilespec, '\', '/'), ' \' )
     endif
 endfunction
 
