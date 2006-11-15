@@ -1,6 +1,9 @@
 " Version control functions (diff, restore) for backups with date file extension
 " (format '.YYYYMMDD[a-z]' in the same directory as the original file itself. 
 "
+" DEPENDENCIES:
+"   - Requires VIM 7.0. 
+"
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
 "	0.03	02-Nov-2006	ENH: Added user information that IsBackedUp()
@@ -23,7 +26,7 @@
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
-if exists("loaded_writebackupVersionControl")
+if exists("loaded_writebackupVersionControl") || (v:version < 700)
     finish
 endif
 let loaded_writebackupVersionControl = 1
@@ -272,20 +275,20 @@ function! s:ListVersions( filespec )
     let l:versionMessageHeader .= ( empty(l:currentVersion) ? ': ' : ' (current version is marked >x<): ')
     echomsg l:versionMessageHeader
     let l:versionMessage = ''
-    let l:version = ''
+    let l:backupVersion = ''
     for l:backupfile in l:backupfiles
-	let l:previousVersion = l:version
-	let l:version = s:GetVersion( l:backupfile )
-	if strpart( l:version, 0, len(l:version) - 1 ) == strpart( l:previousVersion, 0, len(l:previousVersion) - 1 )
-	    let l:versionMessageAddition = strpart( l:version, len(l:version) - 1 )
-	    if l:version == l:currentVersion
+	let l:previousVersion = l:backupVersion
+	let l:backupVersion = s:GetVersion( l:backupfile )
+	if strpart( l:backupVersion, 0, len(l:backupVersion) - 1 ) == strpart( l:previousVersion, 0, len(l:previousVersion) - 1 )
+	    let l:versionMessageAddition = strpart( l:backupVersion, len(l:backupVersion) - 1 )
+	    if l:backupVersion == l:currentVersion
 		let l:versionMessageAddition = '>' . l:versionMessageAddition . '<'
 	    endif
 	    let l:versionMessage .= l:versionMessageAddition
 	else
 	    echomsg l:versionMessage 
-	    let l:versionMessage = l:version
-	    if l:version == l:currentVersion
+	    let l:versionMessage = l:backupVersion
+	    if l:backupVersion == l:currentVersion
 		let l:versionMessage= strpart( l:versionMessage, 0, len(l:versionMessage) - 1 ). '>' . strpart( l:versionMessage, len(l:versionMessage) - 1 ) . '<'
 	    endif
 	endif
@@ -493,3 +496,9 @@ command! WriteBackupRestoreFromPred :call <SID>RestoreFromPred(expand('%'))
 command! WriteBackupRestoreThisBackup :call <SID>RestoreThisBackup(expand('%'))
 
 "command! WriteBackupDeleteLastBackup
+
+" Instead of backing up the current buffer, back up the saved version of the
+" buffer. This comes handy when you realize you need a backup only after you've
+" made changes to the buffer. 
+"command! WriteBackupOfSavedOriginal
+
