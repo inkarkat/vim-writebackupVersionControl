@@ -6,6 +6,7 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"	0.04	16-Nov-2006	BF: '%' and '#' must also be escaped for VIM. 
 "	0.03	02-Nov-2006	ENH: Added user information that IsBackedUp()
 "				compares with saved version, not modified
 "				buffer. 
@@ -198,7 +199,7 @@ function! s:DiffWithPred( filespec )
 	else
 	    let l:splittype=':diffsplit '
 	endif
-	execute l:splittype . escape( tr( l:predecessor, '\', '/'), ' \' )
+	execute l:splittype . escape( tr( l:predecessor, '\', '/'), ' \%#' )
     endif
 endfunction
 
@@ -466,7 +467,7 @@ function! s:RestoreThisBackup( filespec )
     endif
 
     if s:Restore( a:filespec, l:originalFilespec, "Really override '" . l:originalFilespec . "' with this backup '" . l:currentVersion . "'?" )
-	execute 'edit! ' . escape( tr( l:originalFilespec, '\', '/'), ' \' )
+	execute 'edit! ' . escape( tr( l:originalFilespec, '\', '/'), ' \%#' )
     endif
 endfunction
 
