@@ -3,9 +3,12 @@
 "
 " DEPENDENCIES:
 "   - Requires VIM 7.0. 
+"   - Requires writebackup.vim for :WriteBackupOfSavedOriginal command. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"	0.05	06-Dec-2006	Factored out Copy() function. 
+"				Implemented :WriteBackupOfSavedOriginal command. 
 "	0.04	16-Nov-2006	BF: '%' and '#' must also be escaped for VIM. 
 "	0.03	02-Nov-2006	ENH: Added user information that IsBackedUp()
 "				compares with saved version, not modified
@@ -361,6 +364,41 @@ function! s:IsBackedUp( filespec )
     endif
 endfunction
 
+function! s:Copy( source, target )
+"*******************************************************************************
+"* PURPOSE:
+"   Copies a:source to a:target. If a:target exists, it is overwritten. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   none
+"* EFFECTS / POSTCONDITIONS:
+"   Creates / modifies a:target on the file system. 
+"* INPUTS:
+"   a:source filespec
+"   a:target filespec
+"* RETURN VALUES: 
+"   none
+"   throws 'WriteBackupVersionControl: Unsupported operating system type.'
+"   throws copy command output if shell copy command failed
+"*******************************************************************************
+    " Expand filespecs to absolute paths to avoid problems with cwd, especially
+    " on Windows systems with UNC paths. 
+    let l:sourceFilespec = fnamemodify( a:source, ':p' )
+    let l:targetFilespec = fnamemodify( a:target, ':p' )
+
+    if has('win32')
+	let l:copyCmd = 'copy /Y "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
+    elseif has('unix')
+	let l:copyCmd = 'cp "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
+    else
+	throw 'WriteBackupVersionControl: Unsupported operating system type.'
+    endif
+
+    let l:cmdOutput = system( l:copyCmd )
+    if v:shell_error != 0
+	throw l:cmdOutput
+    endif
+endfunction
+
 function! s:Restore( source, target, confirmationMessage )
 "*******************************************************************************
 "* PURPOSE:
@@ -396,29 +434,15 @@ function! s:Restore( source, target, confirmationMessage )
     " contents. 
     " Thus, we invoke an external command to create a perfect copy.
     " Unfortunately, this introduces platform-specific code. 
-
-    " Expand filespecs to absolute paths to avoid problems with cwd, especially
-    " on Windows systems with UNC paths. 
-    let l:sourceFilespec = fnamemodify( a:source, ':p' )
-    let l:targetFilespec = fnamemodify( a:target, ':p' )
-
-    if has('win32')
-	let l:copyCmd = 'copy /Y "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
-    elseif has('unix')
-	let l:copyCmd = 'cp "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
-    else
-	throw 'Unsupported operating system type.'
-    endif
-
-    let l:cmdOutput = system( l:copyCmd )
-    if v:shell_error != 0
+    try
+	call s:Copy( a:source, a:target )
+    catch
 	echohl Error
-	echomsg 'Failed to restore file: ' . l:cmdOutput
+	echomsg 'Failed to restore file: ' . v:exception
 	echohl None
 	return 0
-    else
-	return 1
-    endif
+    endtry
+    return 1
 endfunction
 
 function! s:RestoreFromPred( originalFilespec )
@@ -471,6 +495,35 @@ function! s:RestoreThisBackup( filespec )
     endif
 endfunction
 
+function! s:WriteBackupOfSavedOriginal()
+"*******************************************************************************
+"* PURPOSE:
+"   Instead of backing up the current buffer, back up the saved version of the
+"   buffer. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   none
+"* RETURN VALUES: 
+"   none
+"*******************************************************************************
+    try
+	let l:backupfilename = WriteBackup_GetBackupFilename()
+	call s:Copy( expand('%'), l:backupfilename )
+	echomsg '"' . l:backupfilename . '" written'
+    catch /^WriteBackup:/
+	" All backup letters a-z are already used; report error. 
+	echohl Error
+	echomsg "Ran out of backup file names"
+	echohl None
+    catch
+	echohl Error
+	echomsg 'Failed to backup file: ' . v:exception
+	echohl None
+    endtry
+endfunction
 
 "- commands -------------------------------------------------------------------
 
@@ -501,5 +554,5 @@ command! WriteBackupRestoreThisBackup :call <SID>RestoreThisBackup(expand('%'))
 " Instead of backing up the current buffer, back up the saved version of the
 " buffer. This comes handy when you realize you need a backup only after you've
 " made changes to the buffer. 
-"command! WriteBackupOfSavedOriginal
+command! WriteBackupOfSavedOriginal :call <SID>WriteBackupOfSavedOriginal()
 
