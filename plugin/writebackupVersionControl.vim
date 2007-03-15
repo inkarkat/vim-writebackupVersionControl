@@ -1,12 +1,66 @@
-" Version control functions (diff, restore) for backups with date file extension
-" (format '.YYYYMMDD[a-z]' in the same directory as the original file itself. 
+" writebackupVersionControl.vim: Version control functions (diff, restore) for
+" writebackup.vim backups with date file extension (format '.YYYYMMDD[a-z]'). 
+"
+" DESCRIPTION:
+"   This script enhances the primitive file backup mechanism provided by
+"   writebackup.vim with some functions of real revision control systems like
+"   CVS, RCS or Subversion - without additional software. 
+"   Via VIM commands, you can list all backup versions that exist for the
+"   current file, check whether you have a current backup, backup the saved
+"   version of the buffer even after you've made unsaved changes in the buffer
+"   (which is useful for after-the-fact backups). 
+"   Within VIM, you can create a diff with the previous version, restore the
+"   current file from its predecessor or any other backed-up version. 
+"
+" USAGE:
+"   :WriteBackupDiffWithPred
+"	Performs a diff of the current file (which may be the current version or
+"	an older backup) with the previous version. The diff is done inside VIM,
+"	with a new diffsplit being opened. 
+"
+"   :WriteBackupListVersions
+"	List all backup versions that exist for the current file. If the file
+"	isn't the current version, it is marked in the version list. If the file
+"	is the current version, the time that has passed since the last backup
+"	is printed, too. 
+"
+"   :WriteBackupIsBackedUp
+"	Checks whether the latest backup is identical to the (saved version of
+"	the) current file (which must be the latest version). 
+"
+"   :WriteBackupRestoreFromPred
+"	Overwrites the current file (which must be the latest version) with its
+"	latest backup. 
+"
+"   :WriteBackupRestoreThisBackup
+"	Restores the current file as the latest version, which will be
+"	overwritten. 
+"
+"   :WriteBackupOfSavedOriginal
+"	Instead of backing up the current buffer, back up the saved version of
+"	the buffer. This comes handy when you realize you need a backup only
+"	after you've made changes to the buffer. 
+"
+" INSTALLATION:
+"   Put the script into your user or system VIM plugin directory (e.g.
+"   ~/.vim/plugin). 
+"
 "
 " DEPENDENCIES:
 "   - Requires VIM 7.0. 
 "   - Requires writebackup.vim for :WriteBackupOfSavedOriginal command. 
+"   - External commands 'diff', 'cp' (Unix), 'copy' (Windows). 
+"
+" CONFIGURATION:
+"   To change the default diffsplit from vertical to horizontal, use: 
+"	let g:writebackup_DiffVertSplit = 0
+"
+" Copyright: (C) 2007 by Ingo Karkat
+"   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"	0.06	07-Mar-2007	Added documentation. 
 "	0.05	06-Dec-2006	Factored out Copy() function. 
 "				Implemented :WriteBackupOfSavedOriginal command. 
 "	0.04	16-Nov-2006	BF: '%' and '#' must also be escaped for VIM. 
@@ -30,10 +84,10 @@
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
-if exists("loaded_writebackupVersionControl") || (v:version < 700)
+if exists("g:loaded_writebackupVersionControl") || (v:version < 700)
     finish
 endif
-let loaded_writebackupVersionControl = 1
+let g:loaded_writebackupVersionControl = 1
 
 " Allow user to specify diffsplit of horiz. or vert.
 if !exists('g:writebackup_DiffVertSplit')
@@ -526,33 +580,11 @@ function! s:WriteBackupOfSavedOriginal()
 endfunction
 
 "- commands -------------------------------------------------------------------
-
-" Performs a diff of the current file (which may be the current version or an
-" older backup) with the previous version. The diff is done inside VIM, with a
-" new diffsplit being opened. 
-command! WriteBackupDiffWithPred :call <SID>DiffWithPred(expand('%'))
-
-" List all backup versions that exist for the current file. 
-" If the file isn't the current version, it is marked in the version list. 
-" If the file is the current version, the time that has passed since the last
-" backup is printed, too. 
-command! WriteBackupListVersions :call <SID>ListVersions(expand('%'))
-
-" Checks whether the latest backup is identical to the (saved version of the)
-" current file (which must be the latest version). 
-command! WriteBackupIsBackedUp :call <SID>IsBackedUp(expand('%'))
-
-" Overwrites the current file (which must be the latest version) with its latest
-" backup. 
-command! WriteBackupRestoreFromPred :call <SID>RestoreFromPred(expand('%'))
-
-" Restores the current file as the latest version, which will be overwritten. 
-command! WriteBackupRestoreThisBackup :call <SID>RestoreThisBackup(expand('%'))
-
+command! WriteBackupDiffWithPred	:call <SID>DiffWithPred(expand('%'))
+command! WriteBackupListVersions	:call <SID>ListVersions(expand('%'))
+command! WriteBackupIsBackedUp		:call <SID>IsBackedUp(expand('%'))
+command! WriteBackupRestoreFromPred	:call <SID>RestoreFromPred(expand('%'))
+command! WriteBackupRestoreThisBackup	:call <SID>RestoreThisBackup(expand('%'))
 "command! WriteBackupDeleteLastBackup
-
-" Instead of backing up the current buffer, back up the saved version of the
-" buffer. This comes handy when you realize you need a backup only after you've
-" made changes to the buffer. 
-command! WriteBackupOfSavedOriginal :call <SID>WriteBackupOfSavedOriginal()
+command! WriteBackupOfSavedOriginal	:call <SID>WriteBackupOfSavedOriginal()
 
