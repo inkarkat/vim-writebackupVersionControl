@@ -45,10 +45,9 @@
 "   Put the script into your user or system VIM plugin directory (e.g.
 "   ~/.vim/plugin). 
 "
-"
 " DEPENDENCIES:
-"   - Requires VIM 7.0. 
-"   - Requires writebackup.vim for :WriteBackupOfSavedOriginal command. 
+"   - Requires VIM 7.0 or higher. 
+"   - Requires writebackup.vim (vimscript #1828) for :WriteBackupOfSavedOriginal command. 
 "   - External commands 'diff', 'cp' (Unix), 'copy' (Windows). 
 "
 " CONFIGURATION:
@@ -60,7 +59,7 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
-"	0.06	07-Mar-2007	Added documentation. 
+"   1.00.006	07-Mar-2007	Added documentation. 
 "	0.05	06-Dec-2006	Factored out Copy() function. 
 "				Implemented :WriteBackupOfSavedOriginal command. 
 "	0.04	16-Nov-2006	BF: '%' and '#' must also be escaped for VIM. 
