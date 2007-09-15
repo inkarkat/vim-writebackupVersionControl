@@ -587,3 +587,4 @@ command! WriteBackupRestoreThisBackup	:call <SID>RestoreThisBackup(expand('%'))
 "command! WriteBackupDeleteLastBackup
 command! WriteBackupOfSavedOriginal	:call <SID>WriteBackupOfSavedOriginal()
 
+" vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
