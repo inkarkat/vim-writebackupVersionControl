@@ -378,7 +378,7 @@ function! s:IsBackedUp( filespec )
 
     " As we compare the predecessor with the saved original file, not the actual
     " buffer contents (and this is what the user typically wants; checking
-    " whether it is save to write this buffer because an update exists), we add
+    " whether it is safe to write this buffer because an update exists), we add
     " a hint to the user message if the buffer is indeed modified. 
     let l:savedMsg = (&l:modified ? 'saved ' : '') 
 
