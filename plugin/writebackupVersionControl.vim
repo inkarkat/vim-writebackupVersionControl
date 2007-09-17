@@ -76,7 +76,7 @@
 "				buffer. 
 "				BF: In Restore() and IsBackedUp(), expand
 "				filespecs to absolute paths to avoid problems
-"				with cwd, especially on Windows systems with UNC
+"				with CWD, especially on Windows systems with UNC
 "				paths. 
 "				BF: In DiffWithPred() and RestoreThisBackup(),
 "				convert the filespec to VIM syntax. 
@@ -110,7 +110,25 @@ function! s:IsOriginalFile( filespec )
     return a:filespec !~? s:versionRegexp
 endfunction
 
-function! s:GetOriginalFilespec( filespec )
+function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
+"*******************************************************************************
+"* PURPOSE:
+"   The passed a:filespec may be any ordinary file, an original file that has
+"   backups, or a backup file. In the last case, it is tried to determine the
+"   original filespec. This is only guaranteed to work when backups are
+"   created in the same directory as the original file. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:filespec
+"   a:isForDisplayingOnly   If true, returns an approximation of the original
+"	file for use in a user message in case it cannot be resolved. If false,
+"	return an empty string in that case. 
+"* RETURN VALUES: 
+"	original filespec, or empty string, or approximation
+"*******************************************************************************
     if s:IsOriginalFile( a:filespec )
 	return a:filespec
     else
@@ -125,8 +143,20 @@ function! s:GetOriginalFilespec( filespec )
 	return l:adjustedBackupFilespec
     else
 	" If backups are created in a different directory, the complete filespec
-	" of the original file can not be determined (TODO). 
-	return '???/' . fnamemodify( l:adjustedBackupFilespec, ':t' )
+	" of the original file can not be derived from the adjusted backup
+	" filespec, as WriteBackup_AdjustFilespecForBackupDir() (potentially) is
+	" a one-way transformation from multiple directories to one backup
+	" directory. 
+	" When we fail, return an empty string to indicate that the original
+	" filespec could not be resolved. However, if the filespec is only
+	" needed for a user message, we can generate an approximation, which is
+	" better than nothing. 
+	" TODO: Look for original file candidates in all VIM buffers via bufname(). 
+	if a:isForDisplayingOnly
+	    return '???/' . fnamemodify( l:adjustedBackupFilespec, ':t' )
+	else
+	    return ''
+	endif
     endif
 endfunction
 
@@ -141,7 +171,7 @@ endfunction
 function! s:GetAdjustedBackupFilespec( filespec )
 "*******************************************************************************
 "* PURPOSE:
-"   The adjustedBackupFilespec is a imaginary file in the backup directory. By
+"   The adjustedBackupFilespec is an imaginary file in the backup directory. By
 "   appending a backup version, a valid backup filespec is created. 
 "   In case the backup is done in the same directory as the original file, the
 "   adjustedBackupFilespec is equal to the original file. 
@@ -150,7 +180,7 @@ function! s:GetAdjustedBackupFilespec( filespec )
 "* EFFECTS / POSTCONDITIONS:
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
-"	? Explanation of each argument that isn't obvious.
+"   a:filespec
 "* RETURN VALUES: 
 "   adjustedBackupFilespec; the backup directory may not yet exist when no
 "   backups have yet been made. 
@@ -202,7 +232,7 @@ function! s:GetAllBackupsForFile( adjustedBackupFilespec )
 "*******************************************************************************
 "* PURPOSE:
 "   Retrieves a list of all filespecs of backup files for
-"   a:adjustedBackupFilespec
+"   a:adjustedBackupFilespec. 
 "   The list is sorted from oldest to newest backup. The original filespec is
 "   not part of the list. 
 "* ASSUMPTIONS / PRECONDITIONS:
@@ -259,7 +289,7 @@ function! s:GetPredecessorForFile( filespec )
 "   whether the passed filespec is the current file (without a version
 "   extension), or a versioned backup. 
 "* ASSUMPTIONS / PRECONDITIONS:
-"   a:filespec is a valid file. 
+"   none
 "* EFFECTS / POSTCONDITIONS:
 "   none
 "* INPUTS:
@@ -370,7 +400,7 @@ function! s:ListVersions( filespec )
 "* RETURN VALUES: 
 "   none
 "*******************************************************************************
-    let l:originalFilespec = s:GetOriginalFilespec( a:filespec )
+    let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 1 )
     let l:currentVersion = s:GetVersion( a:filespec )
     let l:backupfiles = s:GetAllBackupsForFile( s:GetAdjustedBackupFilespec(a:filespec) )
     if empty( l:backupfiles )
@@ -381,6 +411,7 @@ function! s:ListVersions( filespec )
     let l:versionMessageHeader = "These backups exist for file '" . l:originalFilespec . "'"
     let l:versionMessageHeader .= ( empty(l:currentVersion) ? ': ' : ' (current version is marked >x<): ')
     echomsg l:versionMessageHeader
+
     let l:versionMessage = ''
     let l:backupVersion = ''
     for l:backupfile in l:backupfiles
@@ -442,7 +473,7 @@ function! s:IsBackedUp( filespec )
 	return
     endif
 
-    " Expand filespecs to absolute paths to avoid problems with cwd, especially
+    " Expand filespecs to absolute paths to avoid problems with CWD, especially
     " on Windows systems with UNC paths. 
     let l:predecessorFilespec = fnamemodify( l:predecessor, ':p' )
     let l:originalFilespec = fnamemodify( a:filespec, ':p' )
@@ -483,7 +514,7 @@ function! s:Copy( source, target )
 "   throws 'WriteBackupVersionControl: Unsupported operating system type.'
 "   throws copy command output if shell copy command failed
 "*******************************************************************************
-    " Expand filespecs to absolute paths to avoid problems with cwd, especially
+    " Expand filespecs to absolute paths to avoid problems with CWD, especially
     " on Windows systems with UNC paths. 
     let l:sourceFilespec = fnamemodify( a:source, ':p' )
     let l:targetFilespec = fnamemodify( a:target, ':p' )
@@ -585,10 +616,18 @@ function! s:RestoreThisBackup( filespec )
 "   none
 "*******************************************************************************
     let l:currentVersion = s:GetVersion( a:filespec )
-    let l:originalFilespec = s:GetOriginalFilespec( a:filespec )
     if empty( l:currentVersion )
 	echohl Error
 	echomsg 'You can only restore backup files!'
+	echohl None
+	return
+    endif
+
+    let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 0 )
+    if empty( l:originalFilespec )
+	echohl Error
+	echomsg 'Unable to determine the location of the original file. '
+	" TODO: 'Unable to determine the location of the original file; open it in another buffer. '
 	echohl None
 	return
     endif
