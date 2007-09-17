@@ -106,27 +106,63 @@ let s:versionFileGlob = '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]'
 let s:versionLength = 10 " 1 dot + 4 year + 2 month + 2 day + 1 letter
 
 "- conversion functions -------------------------------------------------------
+function! s:IsOriginalFile( filespec )
+    return a:filespec !~? s:versionRegexp
+endfunction
+
 function! s:GetOriginalFilespec( filespec )
-    if a:filespec =~ s:versionRegexp
-	return strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
-    else
+    if s:IsOriginalFile( a:filespec )
 	return a:filespec
+    else
+	let l:adjustedBackupFilespec = strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
+	if WriteBackup_GetBackupDir() == '.' && filereadable(l:adjustedBackupFilespec)
+	" If backups are created in the same directory, we can get the original
+	" file by stripping off the tailing file version. 
+	" A buffer-local backup directory configuration which only exists for
+	" the original file buffer, but not the backup file buffer may fool us
+	" here into believing that backups are created in the same directory, so
+	" we explicitly check that the original file exists there as well. 
+	return l:adjustedBackupFilespec
+    else
+	" If backups are created in a different directory, the complete filespec
+	" of the original file can not be determined (TODO). 
+	return '???/' . fnamemodify( l:adjustedBackupFilespec, ':t' )
     endif
 endfunction
 
 function! s:GetVersion( filespec )
-    if a:filespec =~ s:versionRegexp
+    if ! s:IsOriginalFile( a:filespec )
 	return strpart( a:filespec, len( a:filespec ) - s:versionLength + 1 )
     else
 	return ''
     endif
 endfunction
 
-"------------------------------------------------------------------------------
-function! s:IsOriginalFile( filespec )
-    return empty( s:GetVersion( a:filespec ) )
+function! s:GetAdjustedBackupFilespec( filespec )
+"*******************************************************************************
+"* PURPOSE:
+"   The adjustedBackupFilespec is a imaginary file in the backup directory. By
+"   appending a backup version, a valid backup filespec is created. 
+"   In case the backup is done in the same directory as the original file, the
+"   adjustedBackupFilespec is equal to the original file. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"	? Explanation of each argument that isn't obvious.
+"* RETURN VALUES: 
+"   adjustedBackupFilespec; the backup directory may not yet exist when no
+"   backups have yet been made. 
+"*******************************************************************************
+    if s:IsOriginalFile( a:filespec )
+	return WriteBackup_AdjustFilespecForBackupDir( a:filespec, 1 )
+    else
+	return strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
+    endif
 endfunction
 
+"------------------------------------------------------------------------------
 function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage )
 "*******************************************************************************
 "* PURPOSE:
@@ -162,10 +198,11 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 endfunction
 
 "------------------------------------------------------------------------------
-function! s:GetAllBackupsForFile( originalFilespec )
+function! s:GetAllBackupsForFile( adjustedBackupFilespec )
 "*******************************************************************************
 "* PURPOSE:
-"   Retrieves a list of all filespecs of backup files for a:originalFilespec. 
+"   Retrieves a list of all filespecs of backup files for
+"   a:adjustedBackupFilespec
 "   The list is sorted from oldest to newest backup. The original filespec is
 "   not part of the list. 
 "* ASSUMPTIONS / PRECONDITIONS:
@@ -173,11 +210,15 @@ function! s:GetAllBackupsForFile( originalFilespec )
 "* EFFECTS / POSTCONDITIONS:
 "   none
 "* INPUTS:
-"   a:originalFilespec
+"   a:adjustedBackupFilespec	describes a file in the backup directory,
+"   without a version
 "* RETURN VALUES: 
 "   sorted list of backup filespecs
 "*******************************************************************************
-    let l:backupfiles = split( glob( a:originalFilespec . s:versionFileGlob ), "\n" )
+    " glob() will do the right thing and return an empty list if
+    " a:adjustedBackupFilespec doesn't yet exist, because no backup has yet been
+    " made. 
+    let l:backupfiles = split( glob( a:adjustedBackupFilespec . s:versionFileGlob ), "\n" )
     " Although the glob should already be sorted alphabetically in ascending
     " order, we'd better be sure and sort the list on our own, too. 
     let l:backupfiles = sort( l:backupfiles )
@@ -226,12 +267,9 @@ function! s:GetPredecessorForFile( filespec )
 "* RETURN VALUES: 
 "   filespec to the predecessor version. 
 "*******************************************************************************
-    let l:originalFilespec = s:GetOriginalFilespec( a:filespec )
-    let l:currentVersion = s:GetVersion( a:filespec )
-
-    let l:backupfiles = s:GetAllBackupsForFile( l:originalFilespec )
-    if ! empty( l:currentVersion )
-	call s:RemoveNewerBackupsFrom( l:backupfiles, l:currentVersion )
+    let l:backupfiles = s:GetAllBackupsForFile( s:GetAdjustedBackupFilespec(a:filespec) )
+    if ! s:IsOriginalFile( a:filespec )
+	call s:RemoveNewerBackupsFrom( l:backupfiles, s:GetVersion(a:filespec) )
     endif
 
     if empty( l:backupfiles )
@@ -334,7 +372,7 @@ function! s:ListVersions( filespec )
 "*******************************************************************************
     let l:originalFilespec = s:GetOriginalFilespec( a:filespec )
     let l:currentVersion = s:GetVersion( a:filespec )
-    let l:backupfiles = s:GetAllBackupsForFile( l:originalFilespec )
+    let l:backupfiles = s:GetAllBackupsForFile( s:GetAdjustedBackupFilespec(a:filespec) )
     if empty( l:backupfiles )
 	echomsg "No backups exist for file '" . l:originalFilespec . "'. "
 	return
