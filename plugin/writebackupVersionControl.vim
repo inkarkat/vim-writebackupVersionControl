@@ -59,6 +59,14 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.00.007	17-Sep-2007	Command :WriteBackupOfSavedOriginal now checks
+"				that the file is an original one. 
+"				Refactored s:WriteBackupOfSavedOriginal(): Moved
+"				expand('%') out of the function; the original
+"				file is now passed as an argument like it is for
+"				all other functions. 
+"				WriteBackup_GetBackupFilename() now takes a
+"				originalFilespec argument, too. 
 "   1.00.006	07-Mar-2007	Added documentation. 
 "	0.05	06-Dec-2006	Factored out Copy() function. 
 "				Implemented :WriteBackupOfSavedOriginal command. 
@@ -115,11 +123,15 @@ function! s:GetVersion( filespec )
 endfunction
 
 "------------------------------------------------------------------------------
+function! s:IsOriginalFile( filespec )
+    return empty( s:GetVersion( a:filespec ) )
+endfunction
+
 function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage )
 "*******************************************************************************
 "* PURPOSE:
 "   Checks that a:filespec is not a backup file and that at least one backup for
-"   this file exists. If not, an error message is echoed; in the latter case,
+"   this file exists. If not, an error message is echoed; in the first case,
 "   the passed a:notOriginalMessage is used. 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   none
@@ -129,9 +141,9 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 "   a:filespec
 "   a:notOriginalMessage
 "* RETURN VALUES: 
-"   empty string if verification failed; filespec of predecessor othewise. 
+"   empty string if verification failed; filespec of predecessor otherwise. 
 "*******************************************************************************
-    if ! empty( s:GetVersion( a:filespec ) )
+    if ! s:IsOriginalFile( a:filespec )
 	echohl Error
 	echomsg a:notOriginalMessage
 	echohl None
@@ -246,7 +258,7 @@ function! s:DiffWithPred( filespec )
     let l:predecessor = s:GetPredecessorForFile( a:filespec )
     if empty( l:predecessor )
 	echohl Error
-	echomsg "No predecessor found for file '" . expand('%') . "'."
+	echomsg "No predecessor found for file '" . a:filespec . "'."
 	echohl None
     else
 "****D echo '**** predecessor is ' . l:predecessor
@@ -324,11 +336,11 @@ function! s:ListVersions( filespec )
     let l:currentVersion = s:GetVersion( a:filespec )
     let l:backupfiles = s:GetAllBackupsForFile( l:originalFilespec )
     if empty( l:backupfiles )
-	echomsg "No backups exist for file '" . s:GetOriginalFilespec( l:originalFilespec ) . "'. "
+	echomsg "No backups exist for file '" . l:originalFilespec . "'. "
 	return
     endif
 
-    let l:versionMessageHeader = "These backups exist for file '" . s:GetOriginalFilespec( l:originalFilespec ) . "'"
+    let l:versionMessageHeader = "These backups exist for file '" . l:originalFilespec . "'"
     let l:versionMessageHeader .= ( empty(l:currentVersion) ? ': ' : ' (current version is marked >x<): ')
     echomsg l:versionMessageHeader
     let l:versionMessage = ''
@@ -548,7 +560,7 @@ function! s:RestoreThisBackup( filespec )
     endif
 endfunction
 
-function! s:WriteBackupOfSavedOriginal()
+function! s:WriteBackupOfSavedOriginal( filespec )
 "*******************************************************************************
 "* PURPOSE:
 "   Instead of backing up the current buffer, back up the saved version of the
@@ -558,13 +570,20 @@ function! s:WriteBackupOfSavedOriginal()
 "* EFFECTS / POSTCONDITIONS:
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
-"   none
+"	? Explanation of each argument that isn't obvious.
 "* RETURN VALUES: 
 "   none
 "*******************************************************************************
+    if ! s:IsOriginalFile( a:filespec )
+	echohl Error
+	echomsg 'You can only backup the latest file version, not a backup file itself!'
+	echohl None
+	return
+    endif
+
     try
-	let l:backupfilename = WriteBackup_GetBackupFilename()
-	call s:Copy( expand('%'), l:backupfilename )
+	let l:backupfilename = WriteBackup_GetBackupFilename( a:filespec )
+	call s:Copy(  a:filespec, l:backupfilename )
 	echomsg '"' . l:backupfilename . '" written'
     catch /^WriteBackup:/
 	" All backup letters a-z are already used; report error. 
@@ -585,6 +604,6 @@ command! WriteBackupIsBackedUp		:call <SID>IsBackedUp(expand('%'))
 command! WriteBackupRestoreFromPred	:call <SID>RestoreFromPred(expand('%'))
 command! WriteBackupRestoreThisBackup	:call <SID>RestoreThisBackup(expand('%'))
 "command! WriteBackupDeleteLastBackup
-command! WriteBackupOfSavedOriginal	:call <SID>WriteBackupOfSavedOriginal()
+command! WriteBackupOfSavedOriginal	:call <SID>WriteBackupOfSavedOriginal(expand('%'))
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
