@@ -47,10 +47,13 @@
 "
 " DEPENDENCIES:
 "   - Requires VIM 7.0 or higher. 
-"   - Requires writebackup.vim (vimscript #1828) for :WriteBackupOfSavedOriginal command. 
+"   - Requires writebackup.vim (vimscript #1828). 
 "   - External commands 'diff', 'cp' (Unix), 'copy' (Windows). 
 "
 " CONFIGURATION:
+"   For a permanent configuration, put the following commands into your vimrc
+"   file (see :help vimrc). 
+"						  *g:writebackup_DiffVertSplit*
 "   To change the default diffsplit from vertical to horizontal, use: 
 "	let g:writebackup_DiffVertSplit = 0
 "
@@ -59,6 +62,11 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.20.008	18-Sep-2007	ENH: Added support for writing backup files into
+"				a different directory (either one static backup
+"				dir or relative to the original file). 
+"				Now requires writebackup.vim version 1.20 or
+"				later. 
 "   1.00.007	17-Sep-2007	Command :WriteBackupOfSavedOriginal now checks
 "				that the file is an original one. 
 "				Refactored s:WriteBackupOfSavedOriginal(): Moved
@@ -67,6 +75,10 @@
 "				all other functions. 
 "				WriteBackup_GetBackupFilename() now takes a
 "				originalFilespec argument, too. 
+"				BF: :WriteBackupIsBackedUp doesn't deal
+"				correctly with filenames that contain special ex
+"				characters [%#!]. Now using system() instead of
+"				'silent !' to avoid additional escaping. 
 "   1.00.006	07-Mar-2007	Added documentation. 
 "	0.05	06-Dec-2006	Factored out Copy() function. 
 "				Implemented :WriteBackupOfSavedOriginal command. 
@@ -91,10 +103,19 @@
 "	0.01	30-Oct-2006	file creation
 
 " Avoid installing twice or when in compatible mode
-if exists("g:loaded_writebackupVersionControl") || (v:version < 700)
+if exists('g:loaded_writebackupVersionControl') || (v:version < 700)
     finish
 endif
-let g:loaded_writebackupVersionControl = 1
+if ! exists('g:loaded_writebackup')
+    runtime plugin/writebackup.vim
+endif
+if ! exists('g:loaded_writebackup') || g:loaded_writebackup < 120
+    echomsg 'writebackupVersionControl: You need a newer version of writebackup.vim plugin. '
+    finish
+endif
+let g:loaded_writebackupVersionControl = 120
+
+
 
 " Allow user to specify diffsplit of horiz. or vert.
 if !exists('g:writebackup_DiffVertSplit')
@@ -133,29 +154,33 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
 	return a:filespec
     else
 	let l:adjustedBackupFilespec = strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
+
 	if WriteBackup_GetBackupDir() == '.' && filereadable(l:adjustedBackupFilespec)
-	" If backups are created in the same directory, we can get the original
-	" file by stripping off the tailing file version. 
-	" A buffer-local backup directory configuration which only exists for
-	" the original file buffer, but not the backup file buffer may fool us
-	" here into believing that backups are created in the same directory, so
-	" we explicitly check that the original file exists there as well. 
-	return l:adjustedBackupFilespec
-    else
-	" If backups are created in a different directory, the complete filespec
-	" of the original file can not be derived from the adjusted backup
-	" filespec, as WriteBackup_AdjustFilespecForBackupDir() (potentially) is
-	" a one-way transformation from multiple directories to one backup
-	" directory. 
-	" When we fail, return an empty string to indicate that the original
-	" filespec could not be resolved. However, if the filespec is only
-	" needed for a user message, we can generate an approximation, which is
-	" better than nothing. 
-	" TODO: Look for original file candidates in all VIM buffers via bufname(). 
-	if a:isForDisplayingOnly
-	    return '???/' . fnamemodify( l:adjustedBackupFilespec, ':t' )
+	    " If backups are created in the same directory, we can get the original
+	    " file by stripping off the tailing file version. 
+	    " A buffer-local backup directory configuration which only exists for
+	    " the original file buffer, but not the backup file buffer may fool us
+	    " here into believing that backups are created in the same directory, so
+	    " we explicitly check that the original file exists there as well. 
+	    return l:adjustedBackupFilespec
 	else
-	    return ''
+	    " If backups are created in a different directory, the complete filespec
+	    " of the original file can not be derived from the adjusted backup
+	    " filespec, as WriteBackup_AdjustFilespecForBackupDir() (potentially) is
+	    " a one-way transformation from multiple directories to one backup
+	    " directory. 
+	    "
+	    " TODO: Look for original file candidates in all VIM buffers via bufname(). 
+	    "
+	    " When we fail, return an empty string to indicate that the original
+	    " filespec could not be resolved. However, if the filespec is only
+	    " needed for a user message, we can generate an approximation, which is
+	    " better than nothing. 
+	    if a:isForDisplayingOnly
+		return '???/' . fnamemodify( l:adjustedBackupFilespec, ':t' )
+	    else
+		return ''
+	    endif
 	endif
     endif
 endfunction
@@ -481,8 +506,8 @@ function! s:IsBackedUp( filespec )
     " Note: We could save the effort of outputting the diff output to the
     " console if that didn't introduce platform-dependent code (NUL vs.
     " /dev/null) and meddling with the 'shellredir' setting. 
-    let l:diffCmd = 'silent !diff "' . l:predecessorFilespec . '" "' . l:originalFilespec . '"'
-    execute l:diffCmd
+    let l:diffCmd = 'diff "' . l:predecessorFilespec . '" "' . l:originalFilespec . '"'
+    call system( l:diffCmd )
 "****D echo '**** diff return code=' . v:shell_error
 
     if v:shell_error == 0
