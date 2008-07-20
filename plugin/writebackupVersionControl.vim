@@ -62,6 +62,7 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.20.011	28-Jun-2008	Added Windows detection via has('win64'). 
 "   1.20.010	13-Jun-2008	Added -bar to all commands that do not take any
 "				arguments, so that these can be chained together. 
 "   1.20.009	30-Dec-2007	:WriteBackupListVersions and
@@ -567,7 +568,7 @@ function! s:Copy( source, target )
     let l:sourceFilespec = fnamemodify( a:source, ':p' )
     let l:targetFilespec = fnamemodify( a:target, ':p' )
 
-    if has('win32')
+    if has('win32') || has('win64')
 	let l:copyCmd = 'copy /Y "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
     elseif has('unix')
 	let l:copyCmd = 'cp "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
