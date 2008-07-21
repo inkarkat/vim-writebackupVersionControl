@@ -62,6 +62,8 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.20.012	21-Jul-2008	BF: Using ErrorMsg instead of Error highlight
+"				group. 
 "   1.20.011	28-Jun-2008	Added Windows detection via has('win64'). 
 "   1.20.010	13-Jun-2008	Added -bar to all commands that do not take any
 "				arguments, so that these can be chained together. 
@@ -243,7 +245,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 "   empty string if verification failed; filespec of predecessor otherwise. 
 "*******************************************************************************
     if ! s:IsOriginalFile( a:filespec )
-	echohl Error
+	echohl ErrorMsg
 	echomsg a:notOriginalMessage
 	echohl None
 	return ''
@@ -251,7 +253,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 
     let l:predecessor = s:GetPredecessorForFile( a:filespec )
     if empty( l:predecessor )
-	echohl Error
+	echohl ErrorMsg
 	echomsg "No predecessor found for file '" . a:filespec . "'."
 	echohl None
 	return ''
@@ -374,7 +376,7 @@ function! s:DiffWithPred( filespec )
 "*******************************************************************************
     let l:predecessor = s:GetPredecessorForFile( a:filespec )
     if empty( l:predecessor )
-	echohl Error
+	echohl ErrorMsg
 	echomsg "No predecessor found for file '" . a:filespec . "'."
 	echohl None
     else
@@ -541,7 +543,7 @@ function! s:IsBackedUp( filespec )
 	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
 	echohl None
     elseif v:shell_error >= 2
-	echohl Error
+	echohl ErrorMsg
 	echomsg "Encountered problems with the 'diff' tool. Unable to compare with latest backup. "
 	echohl None
     endif
@@ -620,7 +622,7 @@ function! s:Restore( source, target, confirmationMessage )
     try
 	call s:Copy( a:source, a:target )
     catch
-	echohl Error
+	echohl ErrorMsg
 	echomsg 'Failed to restore file: ' . v:exception
 	echohl None
 	return 0
@@ -666,7 +668,7 @@ function! s:RestoreThisBackup( filespec )
 "*******************************************************************************
     let l:currentVersion = s:GetVersion( a:filespec )
     if empty( l:currentVersion )
-	echohl Error
+	echohl ErrorMsg
 	echomsg 'You can only restore backup files!'
 	echohl None
 	return
@@ -674,7 +676,7 @@ function! s:RestoreThisBackup( filespec )
 
     let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 0 )
     if empty( l:originalFilespec )
-	echohl Error
+	echohl ErrorMsg
 	echomsg 'Unable to determine the location of the original file. '
 	" TODO: 'Unable to determine the location of the original file; open it in another buffer. '
 	echohl None
@@ -701,7 +703,7 @@ function! s:WriteBackupOfSavedOriginal( filespec )
 "   none
 "*******************************************************************************
     if ! s:IsOriginalFile( a:filespec )
-	echohl Error
+	echohl ErrorMsg
 	echomsg 'You can only backup the latest file version, not a backup file itself!'
 	echohl None
 	return
@@ -713,11 +715,11 @@ function! s:WriteBackupOfSavedOriginal( filespec )
 	echomsg '"' . l:backupfilename . '" written'
     catch /^WriteBackup:/
 	" All backup letters a-z are already used; report error. 
-	echohl Error
+	echohl ErrorMsg
 	echomsg "Ran out of backup file names"
 	echohl None
     catch
-	echohl Error
+	echohl ErrorMsg
 	echomsg 'Failed to backup file: ' . v:exception
 	echohl None
     endtry
