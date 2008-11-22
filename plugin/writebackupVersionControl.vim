@@ -726,12 +726,12 @@ function! s:WriteBackupOfSavedOriginal( filespec )
 endfunction
 
 "- commands -------------------------------------------------------------------
-command! -bar WriteBackupDiffWithPred		:call <SID>DiffWithPred(expand('%'))
-command! -bar WriteBackupListVersions		:call <SID>ListVersions(expand('%'))
-command! -bar WriteBackupIsBackedUp		:call <SID>IsBackedUp(expand('%'))
-command! -bar WriteBackupRestoreFromPred	:call <SID>RestoreFromPred(expand('%'))
-command! -bar WriteBackupRestoreThisBackup	:call <SID>RestoreThisBackup(expand('%'))
+command! -bar WriteBackupDiffWithPred		call <SID>DiffWithPred(expand('%'))
+command! -bar WriteBackupListVersions		call <SID>ListVersions(expand('%'))
+command! -bar WriteBackupIsBackedUp		call <SID>IsBackedUp(expand('%'))
+command! -bar WriteBackupRestoreFromPred	call <SID>RestoreFromPred(expand('%'))
+command! -bar WriteBackupRestoreThisBackup	call <SID>RestoreThisBackup(expand('%'))
 "command! -bar WriteBackupDeleteLastBackup
-command! -bar WriteBackupOfSavedOriginal	:call <SID>WriteBackupOfSavedOriginal(expand('%'))
+command! -bar WriteBackupOfSavedOriginal	call <SID>WriteBackupOfSavedOriginal(expand('%'))
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
