@@ -254,7 +254,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
     let l:predecessor = s:GetPredecessorForFile( a:filespec )
     if empty( l:predecessor )
 	echohl ErrorMsg
-	echomsg "No predecessor found for file '" . a:filespec . "'."
+	echomsg "No predecessor found for file '" . a:filespec . "'. "
 	echohl None
 	return ''
     endif
@@ -325,7 +325,7 @@ function! s:RemoveNewerBackupsFrom( backupfiles, currentVersion )
     while l:fileCnt < len( a:backupfiles )
 	if s:GetVersion( a:backupfiles[ l:fileCnt ] ) >= a:currentVersion 
 "****D echo '**** removing indexes ' . l:fileCnt . ' to ' . (len( a:backupfiles ) - 1)
-	    call remove( a:backupfiles, l:fileCnt, len( a:backupfiles ) - 1 )
+	    call remove( a:backupfiles, l:fileCnt, -1 )
 "****D call confirm('debug')
 	    break
 	endif
@@ -346,19 +346,14 @@ function! s:GetPredecessorForFile( filespec )
 "* INPUTS:
 "   a:filespec
 "* RETURN VALUES: 
-"   filespec to the predecessor version. 
+"   Filespec to the predecessor version, or empty string if no predecessor
+"   exists.  
 "*******************************************************************************
     let l:backupfiles = s:GetAllBackupsForFile( s:GetAdjustedBackupFilespec(a:filespec) )
     if ! s:IsOriginalFile( a:filespec )
 	call s:RemoveNewerBackupsFrom( l:backupfiles, s:GetVersion(a:filespec) )
     endif
-
-    if empty( l:backupfiles )
-	return ''
-    else
-	let l:predecessor = l:backupfiles[ len( l:backupfiles ) - 1 ]
-	return l:predecessor
-    endif
+    return get( l:backupfiles, -1, '' )
 endfunction
 
 function! s:DiffWithPred( filespec )
@@ -377,7 +372,7 @@ function! s:DiffWithPred( filespec )
     let l:predecessor = s:GetPredecessorForFile( a:filespec )
     if empty( l:predecessor )
 	echohl ErrorMsg
-	echomsg "No predecessor found for file '" . a:filespec . "'."
+	echomsg "No predecessor found for file '" . a:filespec . "'. "
 	echohl None
     else
 "****D echo '**** predecessor is ' . l:predecessor
