@@ -77,6 +77,7 @@
 "				s:GetAllBackupsForFile(). 
 "				ENH: Added :WriteBackupGoPrev and
 "				:WriteBackupGoNext commands. 
+"				Edited user messages. 
 "   1.20.012	21-Jul-2008	BF: Using ErrorMsg instead of Error highlight
 "				group. 
 "   1.20.011	28-Jun-2008	Added Windows detection via has('win64'). 
@@ -372,17 +373,17 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
 
     if l:currentIndex < 0
 	echohl ErrorMsg
-	echomsg "Couldn't locate this backup '" . a:filespec . "'!"
+	echomsg "Couldn't locate this backup: " . a:filespec
 	echohl None
 	return ''
     elseif l:lastBackupIndex < 0
 	echohl ErrorMsg
-	echomsg "No backups exist for file '" . a:filespec . "'."
+	echomsg "No backups exist for this file."
 	echohl None
 	return ''
     elseif a:relativeIndex > 0 && l:currentIndex == l:lastBackupIndex
 	echohl ErrorMsg
-	echomsg "This is the latest backup: '" . a:filespec . "'."
+	echomsg "This is the latest backup: " . a:filespec
 	echohl None
 	return ''
     elseif a:relativeIndex > 0 && l:currentIndex > l:lastBackupIndex
@@ -392,7 +393,7 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
 	return ''
     elseif a:relativeIndex < 0 && l:currentIndex == 0
 	echohl ErrorMsg
-	echomsg "This is the earliest backup: '" . a:filespec . "'."
+	echomsg "This is the earliest backup: " . a:filespec
 	echohl None
 	return ''
     endif
@@ -521,7 +522,7 @@ function! s:ListVersions( filespec )
     let l:currentVersion = s:GetVersion( a:filespec )
     let l:backupfiles = s:GetAllBackupsForFile(a:filespec)
     if empty( l:backupfiles )
-	echomsg "No backups exist for file '" . l:originalFilespec . "'."
+	echomsg "No backups exist this file."
 	return
     endif
 
@@ -743,8 +744,8 @@ function! s:RestoreThisBackup( filespec )
     let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 0 )
     if empty( l:originalFilespec )
 	echohl ErrorMsg
-	echomsg 'Unable to determine the location of the original file. '
-	" TODO: 'Unable to determine the location of the original file; open it in another buffer. '
+	echomsg 'Unable to determine the location of the original file.'
+	" TODO: 'Unable to determine the location of the original file; open it in another buffer.'
 	echohl None
 	return
     endif
