@@ -5,10 +5,10 @@
 "   This script enhances the primitive file backup mechanism provided by
 "   writebackup.vim with some functions of real revision control systems like
 "   CVS, RCS or Subversion - without additional software. 
-"   Via VIM commands, you can list all backup versions that exist for the
-"   current file, check whether you have a current backup, backup the saved
-"   version of the buffer even after you've made unsaved changes in the buffer
-"   (which is useful for after-the-fact backups). 
+"   Via VIM commands, you can list and go to all backup versions that exist
+"   for the current file, check whether you have a current backup, backup the
+"   saved version of the buffer even after you've made unsaved changes in the
+"   buffer (which is useful for after-the-fact backups). 
 "   Within VIM, you can create a diff with the previous version, restore the
 "   current file from its predecessor or any other backed-up version. 
 "
@@ -23,6 +23,15 @@
 "	isn't the current version, it is marked in the version list. If the file
 "	is the current version, the time that has passed since the last backup
 "	is printed, too. 
+"
+"   :[count]WriteBackupGoPrev[!]
+"   :[count]WriteBackupGoNext[!]
+"	Edit a backup file version relative to the current backup or original
+"	file. You can skip multiple backups via the optional [count]; if the
+"	resulting index is out of bounds, the first / last available backup
+"	version is edited. Thus, :999WriteBackupGoPrev edits the very first
+"	existing backup, and :999WriteBackupGoNext edits the latest backup. 
+"	With [!], any changes to the current version are discarded. 
 "
 "   :WriteBackupIsBackedUp
 "	Checks whether the latest backup is identical to the (saved version of
@@ -62,6 +71,12 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.30.013	24-Nov-2008	Generalized s:GetPredecessorForFile() into
+"				s:GetRelativeBackup(). 
+"				Refactored s:GetAdjustedBackupFilespec() into
+"				s:GetAllBackupsForFile(). 
+"				ENH: Added :WriteBackupGoPrev and
+"				:WriteBackupGoNext commands. 
 "   1.20.012	21-Jul-2008	BF: Using ErrorMsg instead of Error highlight
 "				group. 
 "   1.20.011	28-Jun-2008	Added Windows detection via has('win64'). 
@@ -120,7 +135,7 @@ if ! exists('g:loaded_writebackup')
     runtime plugin/writebackup.vim
 endif
 if ! exists('g:loaded_writebackup') || g:loaded_writebackup < 120
-    echomsg 'writebackupVersionControl: You need a newer version of writebackup.vim plugin. '
+    echomsg 'writebackupVersionControl: You need a newer version of writebackup.vim plugin.'
     finish
 endif
 let g:loaded_writebackupVersionControl = 120
@@ -153,7 +168,7 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
 "* EFFECTS / POSTCONDITIONS:
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
-"   a:filespec
+"   a:filespec	backup or original file
 "   a:isForDisplayingOnly   If true, returns an approximation of the original
 "	file for use in a user message in case it cannot be resolved. If false,
 "	return an empty string in that case. 
@@ -215,7 +230,7 @@ function! s:GetAdjustedBackupFilespec( filespec )
 "* EFFECTS / POSTCONDITIONS:
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
-"   a:filespec
+"   a:filespec	backup or original file
 "* RETURN VALUES: 
 "   adjustedBackupFilespec; the backup directory may not yet exist when no
 "   backups have yet been made. 
@@ -239,7 +254,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 "* EFFECTS / POSTCONDITIONS:
 "   none
 "* INPUTS:
-"   a:filespec
+"   a:filespec	backup or original file
 "   a:notOriginalMessage
 "* RETURN VALUES: 
 "   empty string if verification failed; filespec of predecessor otherwise. 
@@ -251,23 +266,15 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 	return ''
     endif
 
-    let l:predecessor = s:GetPredecessorForFile( a:filespec )
-    if empty( l:predecessor )
-	echohl ErrorMsg
-	echomsg "No predecessor found for file '" . a:filespec . "'. "
-	echohl None
-	return ''
-    endif
-
+    let l:predecessor = s:GetRelativeBackup( a:filespec, -1 )
     return l:predecessor
 endfunction
 
 "------------------------------------------------------------------------------
-function! s:GetAllBackupsForFile( adjustedBackupFilespec )
+function! s:GetAllBackupsForFile( filespec )
 "*******************************************************************************
 "* PURPOSE:
-"   Retrieves a list of all filespecs of backup files for
-"   a:adjustedBackupFilespec. 
+"   Retrieves a list of all filespecs of backup files for a:filespec. 
 "   The list is sorted from oldest to newest backup. The original filespec is
 "   not part of the list. 
 "* ASSUMPTIONS / PRECONDITIONS:
@@ -275,8 +282,7 @@ function! s:GetAllBackupsForFile( adjustedBackupFilespec )
 "* EFFECTS / POSTCONDITIONS:
 "   none
 "* INPUTS:
-"   a:adjustedBackupFilespec	describes a file in the backup directory,
-"   without a version
+"   a:filespec	backup or original file
 "* RETURN VALUES: 
 "   sorted list of backup filespecs
 "*******************************************************************************
@@ -289,10 +295,16 @@ function! s:GetAllBackupsForFile( adjustedBackupFilespec )
 	set wildignore=
     endif
     try
+	" For globbing, we need the filespec of an imaginary file in the backup
+	" directory, to which we can append our file version glob. (The backup
+	" files may reside in a directory different from the original file;
+	" that's why we cannot simply use the original filespec for globbing.)  
+	let l:adjustedBackupFilespec = s:GetAdjustedBackupFilespec(a:filespec)
+
 	" glob() will do the right thing and return an empty list if
-	" a:adjustedBackupFilespec doesn't yet exist, because no backup has yet been
+	" l:adjustedBackupFilespec doesn't yet exist, because no backup has yet been
 	" made. 
-	let l:backupfiles = split( glob( a:adjustedBackupFilespec . s:versionFileGlob ), "\n" )
+	let l:backupfiles = split( glob( l:adjustedBackupFilespec . s:versionFileGlob ), "\n" )
 
 	" Although the glob should already be sorted alphabetically in ascending
 	" order, we'd better be sure and sort the list on our own, too. 
@@ -307,53 +319,116 @@ function! s:GetAllBackupsForFile( adjustedBackupFilespec )
 
 endfunction
 
-function! s:RemoveNewerBackupsFrom( backupfiles, currentVersion )
+function! s:GetIndexOfVersion( backupfiles, currentVersion )
 "*******************************************************************************
 "* PURPOSE:
-"   Removes files from the passed list that are newer or equal to a:currentVersion. 
+"   Determine the index of the backup version a:currentVersion in the passed
+"   list of backup files. 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   none
 "* EFFECTS / POSTCONDITIONS:
-"   Truncates a:backupfiles so that any file version contained is older than a:currentVersion. 
-"* INPUTS:
-"   a:backupfiles: sorted list of filespecs. 
-"   a:currentVersion: version number used as the exclusion criterium. 
-"* RETURN VALUES: 
 "   none
+"* INPUTS:
+"   a:backupfiles: list of backup filespecs. 
+"   a:currentVersion: version number of the backup filespec to be found. 
+"* RETURN VALUES: 
+"   Index into a:backupfiles or -1 if a:currentVersion isn't contained in
+"   a:backupfiles. 
 "*******************************************************************************
     let l:fileCnt = 0
     while l:fileCnt < len( a:backupfiles )
-	if s:GetVersion( a:backupfiles[ l:fileCnt ] ) >= a:currentVersion 
-"****D echo '**** removing indexes ' . l:fileCnt . ' to ' . (len( a:backupfiles ) - 1)
-	    call remove( a:backupfiles, l:fileCnt, -1 )
-"****D call confirm('debug')
-	    break
+	if s:GetVersion( a:backupfiles[ l:fileCnt ] ) == a:currentVersion 
+	    return l:fileCnt
 	endif
 	let l:fileCnt += 1
     endwhile
+    return -1
 endfunction
 
-function! s:GetPredecessorForFile( filespec )
+function! s:GetRelativeBackup( filespec, relativeIndex )
 "*******************************************************************************
 "* PURPOSE:
-"   Gets the filespec of the predecessor of the passed filespec, regardless of
-"   whether the passed filespec is the current file (without a version
-"   extension), or a versioned backup. 
+"   Gets the filespec of a predecessor or later version of the passed
+"   filespec, regardless of whether the passed filespec is the current file
+"   (without a version extension), or a versioned backup. 
+"   If the index is out of bounds, the first / last available backup version
+"   is returned. If a:filespec is the first / last backup version / original
+"   file, an error is printed and an empty string is returned. 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   none
 "* EFFECTS / POSTCONDITIONS:
 "   none
 "* INPUTS:
-"   a:filespec
+"   a:filespec	backup or original file
+"   a:relativeIndex Negative numbers select predecessors, positive numbers
+"	later versions. 
 "* RETURN VALUES: 
-"   Filespec to the predecessor version, or empty string if no predecessor
+"   Filespec of the backup version, or empty string if no such version
 "   exists.  
 "*******************************************************************************
-    let l:backupfiles = s:GetAllBackupsForFile( s:GetAdjustedBackupFilespec(a:filespec) )
-    if ! s:IsOriginalFile( a:filespec )
-	call s:RemoveNewerBackupsFrom( l:backupfiles, s:GetVersion(a:filespec) )
+    let l:backupfiles = s:GetAllBackupsForFile(a:filespec)
+    let l:lastBackupIndex = len(l:backupfiles) - 1
+    let l:currentIndex = (s:IsOriginalFile(a:filespec) ? l:lastBackupIndex + 1 : s:GetIndexOfVersion( l:backupfiles, s:GetVersion(a:filespec) ))
+
+    if l:currentIndex < 0
+	echohl ErrorMsg
+	echomsg "Couldn't locate this backup '" . a:filespec . "'!"
+	echohl None
+	return ''
+    elseif l:lastBackupIndex < 0
+	echohl ErrorMsg
+	echomsg "No backups exist for file '" . a:filespec . "'."
+	echohl None
+	return ''
+    elseif a:relativeIndex > 0 && l:currentIndex == l:lastBackupIndex
+	echohl ErrorMsg
+	echomsg "This is the latest backup: '" . a:filespec . "'."
+	echohl None
+	return ''
+    elseif a:relativeIndex > 0 && l:currentIndex > l:lastBackupIndex
+	echohl ErrorMsg
+	echomsg 'Cannot go beyond original file.'
+	echohl None
+	return ''
+    elseif a:relativeIndex < 0 && l:currentIndex == 0
+	echohl ErrorMsg
+	echomsg "This is the earliest backup: '" . a:filespec . "'."
+	echohl None
+	return ''
     endif
-    return get( l:backupfiles, -1, '' )
+
+    let l:newIndex = min([max([l:currentIndex + a:relativeIndex, 0]), l:lastBackupIndex])
+    return get( l:backupfiles, l:newIndex, '' )
+endfunction
+
+function! s:WriteBackupGo( filespec, isBang, relativeIndex )
+"*******************************************************************************
+"* PURPOSE:
+"   Edit a backup file version relative to the current file. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:filespec	backup or original file
+"   a:isBang	Flag whether any changes to the current buffer should be
+"	discarded. 
+"   a:relativeIndex 
+"* RETURN VALUES: 
+"   None. 
+"*******************************************************************************
+    let l:filespec = s:GetRelativeBackup( a:filespec, a:relativeIndex )
+    if ! empty(l:filespec)
+	try
+	    execute 'edit' . (a:isBang ? '!' : '') escape( tr( l:filespec, '\', '/'), ' \%#' )
+	catch /^Vim\%((\a\+)\)\=:E/
+	    echohl ErrorMsg
+	    " v:exception contains what is normally in v:errmsg, but with extra
+	    " exception source info prepended, which we cut away. 
+	    echomsg substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', '')
+	    echohl NONE
+	endtry
+    endif
 endfunction
 
 function! s:DiffWithPred( filespec )
@@ -365,16 +440,12 @@ function! s:DiffWithPred( filespec )
 "* EFFECTS / POSTCONDITIONS:
 "	? List of the procedure's effect on each external variable, control, or other element.
 "* INPUTS:
-"   a:filespec
+"   a:filespec	backup or original file
 "* RETURN VALUES: 
 "   none
 "*******************************************************************************
-    let l:predecessor = s:GetPredecessorForFile( a:filespec )
-    if empty( l:predecessor )
-	echohl ErrorMsg
-	echomsg "No predecessor found for file '" . a:filespec . "'. "
-	echohl None
-    else
+    let l:predecessor = s:GetRelativeBackup( a:filespec, -1 )
+    if ! empty( l:predecessor )
 "****D echo '**** predecessor is ' . l:predecessor
 	if g:writebackup_DiffVertSplit == 1
 	    let l:splittype=':vert diffsplit '
@@ -448,9 +519,9 @@ function! s:ListVersions( filespec )
 "*******************************************************************************
     let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 1 )
     let l:currentVersion = s:GetVersion( a:filespec )
-    let l:backupfiles = s:GetAllBackupsForFile( s:GetAdjustedBackupFilespec(a:filespec) )
+    let l:backupfiles = s:GetAllBackupsForFile(a:filespec)
     if empty( l:backupfiles )
-	echomsg "No backups exist for file '" . l:originalFilespec . "'. "
+	echomsg "No backups exist for file '" . l:originalFilespec . "'."
 	return
     endif
 
@@ -480,7 +551,7 @@ function! s:ListVersions( filespec )
     echomsg l:versionMessage
 
     if empty( l:currentVersion )
-	let l:lastBackupFile = l:backupfiles[ len( l:backupfiles ) - 1 ]
+	let l:lastBackupFile = l:backupfiles[-1]
 	call s:EchoElapsedTimeSinceVersion( l:lastBackupFile )
     endif
 endfunction
@@ -514,7 +585,7 @@ function! s:IsBackedUp( filespec )
     " anyway, only if there *are* any!
     if getfsize( l:predecessor ) != getfsize( a:filespec )
 	echohl WarningMsg
-	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'."
 	echohl None
 	return
     endif
@@ -532,14 +603,14 @@ function! s:IsBackedUp( filespec )
 "****D echo '**** diff return code=' . v:shell_error
 
     if v:shell_error == 0
-	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is identical with the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is identical with the latest backup version '" . s:GetVersion( l:predecessor ) . "'."
     elseif v:shell_error == 1
 	echohl WarningMsg
-	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'. "
+	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'."
 	echohl None
     elseif v:shell_error >= 2
 	echohl ErrorMsg
-	echomsg "Encountered problems with the 'diff' tool. Unable to compare with latest backup. "
+	echomsg "Encountered problems with the 'diff' tool. Unable to compare with latest backup."
 	echohl None
     endif
 endfunction
@@ -597,7 +668,7 @@ function! s:Restore( source, target, confirmationMessage )
 "*******************************************************************************
     let l:response = confirm( a:confirmationMessage, "&No\n&Yes", 1, 'Question' )
     if l:response != 2
-	echomsg 'Restore canceled. '
+	echomsg 'Restore canceled.'
 	return 0
     endif
 
@@ -723,6 +794,8 @@ endfunction
 "- commands -------------------------------------------------------------------
 command! -bar WriteBackupDiffWithPred		call <SID>DiffWithPred(expand('%'))
 command! -bar WriteBackupListVersions		call <SID>ListVersions(expand('%'))
+command! -bar -bang -count=1 WriteBackupGoPrev	call <SID>WriteBackupGo(expand('%'), <bang>0, -1 * <count>)
+command! -bar -bang -count=1 WriteBackupGoNext	call <SID>WriteBackupGo(expand('%'), <bang>0, <count>)
 command! -bar WriteBackupIsBackedUp		call <SID>IsBackedUp(expand('%'))
 command! -bar WriteBackupRestoreFromPred	call <SID>RestoreFromPred(expand('%'))
 command! -bar WriteBackupRestoreThisBackup	call <SID>RestoreThisBackup(expand('%'))
