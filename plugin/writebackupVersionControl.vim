@@ -33,6 +33,12 @@
 "	existing backup, and :999WriteBackupGoNext edits the latest backup. 
 "	With [!], any changes to the current version are discarded. 
 "
+"   :WriteBackupGoOriginal[!]
+"	Edit the original of the current backup file. If backups are stored in a
+"	different directory, it may not be possible to determine the original
+"	file. 
+"	With [!], any changes to the current version are discarded. 
+"
 "   :WriteBackupIsBackedUp
 "	Checks whether the latest backup is identical to the (saved version of
 "	the) current file (which must be the latest version). 
@@ -78,6 +84,7 @@
 "				ENH: Added :WriteBackupGoPrev and
 "				:WriteBackupGoNext commands. 
 "				Edited user messages. 
+"				ENH: Added :WriteBackupGoOriginal command. 
 "   1.20.012	21-Jul-2008	BF: Using ErrorMsg instead of Error highlight
 "				group. 
 "   1.20.011	28-Jun-2008	Added Windows detection via has('win64'). 
@@ -345,7 +352,6 @@ function! s:GetIndexOfVersion( backupfiles, currentVersion )
     endwhile
     return -1
 endfunction
-
 function! s:GetRelativeBackup( filespec, relativeIndex )
 "*******************************************************************************
 "* PURPOSE:
@@ -402,7 +408,63 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
     return get( l:backupfiles, l:newIndex, '' )
 endfunction
 
-function! s:WriteBackupGo( filespec, isBang, relativeIndex )
+function! s:EditFile( filespec, isBang )
+"*******************************************************************************
+"* PURPOSE:
+"   Edit a:filespec in the current window (via :edit). 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:filespec	backup or original file
+"   a:isBang	Flag whether any changes to the current buffer should be
+"	discarded. 
+"* RETURN VALUES: 
+"   None. 
+"*******************************************************************************
+    if ! empty(a:filespec)
+	try
+	    execute 'edit' . (a:isBang ? '!' : '') escape( tr( a:filespec, '\', '/'), ' \%#' )
+	catch /^Vim\%((\a\+)\)\=:E/
+	    echohl ErrorMsg
+	    " v:exception contains what is normally in v:errmsg, but with extra
+	    " exception source info prepended, which we cut away. 
+	    echomsg substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', '')
+	    echohl NONE
+	endtry
+    endif
+endfunction
+function! s:WriteBackupGoOriginal( filespec, isBang )
+"*******************************************************************************
+"* PURPOSE:
+"   Edit the original file of the passed backup file a:filespec. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:filespec	backup or original file
+"   a:isBang	Flag whether any changes to the current buffer should be
+"	discarded. 
+"* RETURN VALUES: 
+"   None. 
+"*******************************************************************************
+    if s:IsOriginalFile( a:filespec )
+	echomsg "This is the original file."
+	return
+    endif
+
+    let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 0 )
+    if empty( l:originalFilespec )
+	echohl ErrorMsg
+	echomsg 'Unable to determine the location of the original file.'
+	echohl None
+    else
+	call s:EditFile(l:originalFilespec, a:isBang)
+    endif
+endfunction
+function! s:WriteBackupGoBackup( filespec, isBang, relativeIndex )
 "*******************************************************************************
 "* PURPOSE:
 "   Edit a backup file version relative to the current file. 
@@ -418,18 +480,7 @@ function! s:WriteBackupGo( filespec, isBang, relativeIndex )
 "* RETURN VALUES: 
 "   None. 
 "*******************************************************************************
-    let l:filespec = s:GetRelativeBackup( a:filespec, a:relativeIndex )
-    if ! empty(l:filespec)
-	try
-	    execute 'edit' . (a:isBang ? '!' : '') escape( tr( l:filespec, '\', '/'), ' \%#' )
-	catch /^Vim\%((\a\+)\)\=:E/
-	    echohl ErrorMsg
-	    " v:exception contains what is normally in v:errmsg, but with extra
-	    " exception source info prepended, which we cut away. 
-	    echomsg substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', '')
-	    echohl NONE
-	endtry
-    endif
+    call s:EditFile( s:GetRelativeBackup( a:filespec, a:relativeIndex ), a:isBang )
 endfunction
 
 function! s:DiffWithPred( filespec )
@@ -476,7 +527,6 @@ function! s:DualDigit( number )
     endwhile
     return strpart( l:digits, 0, 2 )
 endfunction
-
 function! s:EchoElapsedTimeSinceVersion( backupFile )
 "*******************************************************************************
 "* PURPOSE:
@@ -504,7 +554,6 @@ function! s:EchoElapsedTimeSinceVersion( backupFile )
 
     echomsg l:message
 endfunction
-
 function! s:ListVersions( filespec )
 "*******************************************************************************
 "* PURPOSE:
@@ -650,7 +699,6 @@ function! s:Copy( source, target )
 	throw l:cmdOutput
     endif
 endfunction
-
 function! s:Restore( source, target, confirmationMessage )
 "*******************************************************************************
 "* PURPOSE:
@@ -696,7 +744,6 @@ function! s:Restore( source, target, confirmationMessage )
     endtry
     return 1
 endfunction
-
 function! s:RestoreFromPred( originalFilespec )
 "*******************************************************************************
 "* PURPOSE:
@@ -795,8 +842,9 @@ endfunction
 "- commands -------------------------------------------------------------------
 command! -bar WriteBackupDiffWithPred		call <SID>DiffWithPred(expand('%'))
 command! -bar WriteBackupListVersions		call <SID>ListVersions(expand('%'))
-command! -bar -bang -count=1 WriteBackupGoPrev	call <SID>WriteBackupGo(expand('%'), <bang>0, -1 * <count>)
-command! -bar -bang -count=1 WriteBackupGoNext	call <SID>WriteBackupGo(expand('%'), <bang>0, <count>)
+command! -bar -bang -count=1 WriteBackupGoPrev	call <SID>WriteBackupGoBackup(expand('%'), <bang>0, -1 * <count>)
+command! -bar -bang -count=1 WriteBackupGoNext	call <SID>WriteBackupGoBackup(expand('%'), <bang>0, <count>)
+command! -bar -bang WriteBackupGoOriginal	call <SID>WriteBackupGoOriginal(expand('%'), <bang>0)
 command! -bar WriteBackupIsBackedUp		call <SID>IsBackedUp(expand('%'))
 command! -bar WriteBackupRestoreFromPred	call <SID>RestoreFromPred(expand('%'))
 command! -bar WriteBackupRestoreThisBackup	call <SID>RestoreThisBackup(expand('%'))
