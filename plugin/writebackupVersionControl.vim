@@ -77,6 +77,10 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.30.014	17-Dec-2008	:WriteBackupDiffWithPred now avoids that a
+"				previous (open) fold status at the cursor
+"				position is remembered and obscures the actual
+"				differences. 
 "   1.30.013	24-Nov-2008	Generalized s:GetPredecessorForFile() into
 "				s:GetRelativeBackup(). 
 "				Refactored s:GetAdjustedBackupFilespec() into
@@ -499,6 +503,12 @@ function! s:DiffWithPred( filespec )
     let l:predecessor = s:GetRelativeBackup( a:filespec, -1 )
     if ! empty( l:predecessor )
 "****D echo '**** predecessor is ' . l:predecessor
+
+	" Close all folds before :diffsplit; this avoids that a previous (open)
+	" fold status at the cursor position is remembered and obscures the
+	" actual differences. 
+	if has('folding') | setlocal foldlevel=0 | endif
+
 	if g:writebackup_DiffVertSplit == 1
 	    let l:splittype=':vert diffsplit '
 	else
@@ -571,7 +581,7 @@ function! s:ListVersions( filespec )
     let l:currentVersion = s:GetVersion( a:filespec )
     let l:backupfiles = s:GetAllBackupsForFile(a:filespec)
     if empty( l:backupfiles )
-	echomsg "No backups exist this file."
+	echomsg "No backups exist for this file."
 	return
     endif
 
