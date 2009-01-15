@@ -72,11 +72,15 @@
 "   To change the default diffsplit from vertical to horizontal, use: 
 "	let g:writebackup_DiffVertSplit = 0
 "
-" Copyright: (C) 2007-2008 by Ingo Karkat
+" Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.30.015	06-Jan-2009	:WriteBackupDiffWithPred doesn't jump to the
+"				predecessor window; it now moves the cursor back
+"				to the originating window; this feels more
+"				natural. 
 "   1.30.014	17-Dec-2008	:WriteBackupDiffWithPred now avoids that a
 "				previous (open) fold status at the cursor
 "				position is remembered and obscures the actual
@@ -503,18 +507,20 @@ function! s:DiffWithPred( filespec )
     let l:predecessor = s:GetRelativeBackup( a:filespec, -1 )
     if ! empty( l:predecessor )
 "****D echo '**** predecessor is ' . l:predecessor
-
 	" Close all folds before :diffsplit; this avoids that a previous (open)
 	" fold status at the cursor position is remembered and obscures the
 	" actual differences. 
 	if has('folding') | setlocal foldlevel=0 | endif
 
 	if g:writebackup_DiffVertSplit == 1
-	    let l:splittype=':vert diffsplit '
+	    let l:splittype='vert diffsplit '
 	else
-	    let l:splittype=':diffsplit '
+	    let l:splittype='diffsplit '
 	endif
 	execute l:splittype . escape( tr( l:predecessor, '\', '/'), ' \%#' )
+
+	" Return to original window. 
+	wincmd p
     endif
 endfunction
 
