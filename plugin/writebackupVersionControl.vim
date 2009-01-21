@@ -77,6 +77,8 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.30.016	16-Jan-2009	Factored out s:ErrorMsg().
+"				Now setting v:errmsg on errors. 
 "   1.30.015	06-Jan-2009	:WriteBackupDiffWithPred doesn't jump to the
 "				predecessor window; it now moves the cursor back
 "				to the originating window; this feels more
@@ -166,6 +168,14 @@ endif
 let s:versionRegexp = '\.[12]\d\d\d\d\d\d\d[a-z]$'
 let s:versionFileGlob = '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]'
 let s:versionLength = 10 " 1 dot + 4 year + 2 month + 2 day + 1 letter
+
+"- utility functions ----------------------------------------------------------
+function! s:ErrorMsg( text )
+    echohl ErrorMsg
+    let v:errmsg = a:text
+    echomsg v:errmsg
+    echohl None
+endfunction
 
 "- conversion functions -------------------------------------------------------
 function! s:IsOriginalFile( filespec )
@@ -276,9 +286,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 "   empty string if verification failed; filespec of predecessor otherwise. 
 "*******************************************************************************
     if ! s:IsOriginalFile( a:filespec )
-	echohl ErrorMsg
-	echomsg a:notOriginalMessage
-	echohl None
+	call s:ErrorMsg(a:notOriginalMessage)
 	return ''
     endif
 
@@ -386,29 +394,19 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
     let l:currentIndex = (s:IsOriginalFile(a:filespec) ? l:lastBackupIndex + 1 : s:GetIndexOfVersion( l:backupfiles, s:GetVersion(a:filespec) ))
 
     if l:currentIndex < 0
-	echohl ErrorMsg
-	echomsg "Couldn't locate this backup: " . a:filespec
-	echohl None
+	call s:ErrorMsg("Couldn't locate this backup: " . a:filespec)
 	return ''
     elseif l:lastBackupIndex < 0
-	echohl ErrorMsg
-	echomsg "No backups exist for this file."
-	echohl None
+	call s:ErrorMsg('No backups exist for this file.')
 	return ''
     elseif a:relativeIndex > 0 && l:currentIndex == l:lastBackupIndex
-	echohl ErrorMsg
-	echomsg "This is the latest backup: " . a:filespec
-	echohl None
+	call s:ErrorMsg("This is the latest backup: " . a:filespec)
 	return ''
     elseif a:relativeIndex > 0 && l:currentIndex > l:lastBackupIndex
-	echohl ErrorMsg
-	echomsg 'Cannot go beyond original file.'
-	echohl None
+	call s:ErrorMsg('Cannot go beyond original file.')
 	return ''
     elseif a:relativeIndex < 0 && l:currentIndex == 0
-	echohl ErrorMsg
-	echomsg "This is the earliest backup: " . a:filespec
-	echohl None
+	call s:ErrorMsg('This is the earliest backup: ' . a:filespec)
 	return ''
     endif
 
@@ -435,11 +433,9 @@ function! s:EditFile( filespec, isBang )
 	try
 	    execute 'edit' . (a:isBang ? '!' : '') escape( tr( a:filespec, '\', '/'), ' \%#' )
 	catch /^Vim\%((\a\+)\)\=:E/
-	    echohl ErrorMsg
 	    " v:exception contains what is normally in v:errmsg, but with extra
 	    " exception source info prepended, which we cut away. 
-	    echomsg substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', '')
-	    echohl NONE
+	    call s:ErrorMsg(substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', ''))
 	endtry
     endif
 endfunction
@@ -465,9 +461,7 @@ function! s:WriteBackupGoOriginal( filespec, isBang )
 
     let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 0 )
     if empty( l:originalFilespec )
-	echohl ErrorMsg
-	echomsg 'Unable to determine the location of the original file.'
-	echohl None
+	call s:ErrorMsg('Unable to determine the location of the original file.')
     else
 	call s:EditFile(l:originalFilespec, a:isBang)
     endif
@@ -675,9 +669,7 @@ function! s:IsBackedUp( filespec )
 	echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'."
 	echohl None
     elseif v:shell_error >= 2
-	echohl ErrorMsg
-	echomsg "Encountered problems with the 'diff' tool. Unable to compare with latest backup."
-	echohl None
+	call s:ErrorMsg("Encountered problems with the 'diff' tool. Unable to compare with latest backup.")
     endif
 endfunction
 
@@ -753,9 +745,7 @@ function! s:Restore( source, target, confirmationMessage )
     try
 	call s:Copy( a:source, a:target )
     catch
-	echohl ErrorMsg
-	echomsg 'Failed to restore file: ' . v:exception
-	echohl None
+	call s:ErrorMsg('Failed to restore file: ' . v:exception)
 	return 0
     endtry
     return 1
@@ -798,18 +788,14 @@ function! s:RestoreThisBackup( filespec )
 "*******************************************************************************
     let l:currentVersion = s:GetVersion( a:filespec )
     if empty( l:currentVersion )
-	echohl ErrorMsg
-	echomsg 'You can only restore backup files!'
-	echohl None
+	call s:ErrorMsg('You can only restore backup files!')
 	return
     endif
 
     let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 0 )
     if empty( l:originalFilespec )
-	echohl ErrorMsg
-	echomsg 'Unable to determine the location of the original file.'
 	" TODO: 'Unable to determine the location of the original file; open it in another buffer.'
-	echohl None
+	call s:ErrorMsg('Unable to determine the location of the original file.')
 	return
     endif
 
@@ -833,9 +819,7 @@ function! s:WriteBackupOfSavedOriginal( filespec )
 "   none
 "*******************************************************************************
     if ! s:IsOriginalFile( a:filespec )
-	echohl ErrorMsg
-	echomsg 'You can only backup the latest file version, not a backup file itself!'
-	echohl None
+	call s:ErrorMsg('You can only backup the latest file version, not a backup file itself!')
 	return
     endif
 
@@ -845,13 +829,9 @@ function! s:WriteBackupOfSavedOriginal( filespec )
 	echomsg '"' . l:backupfilename . '" written'
     catch /^WriteBackup:/
 	" All backup letters a-z are already used; report error. 
-	echohl ErrorMsg
-	echomsg "Ran out of backup file names"
-	echohl None
+	call s:ErrorMsg("Ran out of backup file names")
     catch
-	echohl ErrorMsg
-	echomsg 'Failed to backup file: ' . v:exception
-	echohl None
+	call s:ErrorMsg('Failed to backup file: ' . v:exception)
     endtry
 endfunction
 
