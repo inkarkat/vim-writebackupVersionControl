@@ -68,15 +68,18 @@
 " CONFIGURATION:
 "   For a permanent configuration, put the following commands into your vimrc
 "   file (see :help vimrc). 
-"						  *g:writebackup_DiffVertSplit*
+"						  *g:WriteBackup_DiffVertSplit*
 "   To change the default diffsplit from vertical to horizontal, use: 
-"	let g:writebackup_DiffVertSplit = 0
+"	let g:WriteBackup_DiffVertSplit = 0
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"				Renamed configuration variable from
+"				g:writebackup_DiffVertSplit to
+"				g:WriteBackup_DiffVertSplit. 
 "   1.30.017	22-Jan-2009	BF: :WriteBackupDiffWithPred failed to open the
 "				predecessor with the ':set autochdir' setting if
 "				the CWD has been (temporarily) changed. Now
@@ -165,8 +168,8 @@ let g:loaded_writebackupVersionControl = 120
 
 
 " Allow user to specify diffsplit of horiz. or vert.
-if !exists('g:writebackup_DiffVertSplit')
-    let g:writebackup_DiffVertSplit = 1  " Default to split for diff vertically. 
+if !exists('g:WriteBackup_DiffVertSplit')
+    let g:WriteBackup_DiffVertSplit = 1  " Default to split for diff vertically. 
 endif
 
 let s:versionRegexp = '\.[12]\d\d\d\d\d\d\d[a-z]$'
@@ -208,9 +211,11 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
     if s:IsOriginalFile( a:filespec )
 	return a:filespec
     else
+	" Since a:filespec is no original file, it thusly ends with the backup
+	" date file extension, and we can simply cut it off. 
 	let l:adjustedBackupFilespec = strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
 
-	if WriteBackup_GetBackupDir() == '.' && filereadable(l:adjustedBackupFilespec)
+	if WriteBackup_GetBackupDir(l:adjustedBackupFilespec, 1) == '.' && filereadable(l:adjustedBackupFilespec)
 	    " If backups are created in the same directory, we can get the original
 	    " file by stripping off the tailing file version. 
 	    " A buffer-local backup directory configuration which only exists for
@@ -510,16 +515,12 @@ function! s:DiffWithPred( filespec )
 	" actual differences. 
 	if has('folding') | setlocal foldlevel=0 | endif
 
-	if g:writebackup_DiffVertSplit == 1
-	    let l:splittype='vert diffsplit '
-	else
-	    let l:splittype='diffsplit '
-	endif
+	let l:splittype = (g:WriteBackup_DiffVertSplit ? 'vert ' : '') . 'diffsplit'
 
 	" Expand the predecessor's filespec to an absolute path, because the CWD
 	" may change when a file is opened (e.g. due to autocmds or :set
 	" autochdir). 
-	execute l:splittype . escape( tr( fnamemodify(l:predecessor, ':p'), '\', '/'), ' \%#' )
+	execute l:splittype . ' ' . escape( tr( fnamemodify(l:predecessor, ':p'), '\', '/'), ' \%#' )
 
 	" Return to original window. 
 	wincmd p
@@ -836,8 +837,8 @@ function! s:WriteBackupOfSavedOriginal( filespec )
 	call s:Copy(  a:filespec, l:backupfilename )
 	echomsg '"' . l:backupfilename . '" written'
     catch /^WriteBackup:/
-	" All backup letters a-z are already used; report error. 
-	call s:ErrorMsg("Ran out of backup file names")
+	" Report problem. Probably, all backup letters a-z are already used. 
+	call s:ErrorMsg(substitute(v:exception, '^WriteBackup:\s*', '', ''))
     catch
 	call s:ErrorMsg('Failed to backup file: ' . v:exception)
     endtry
