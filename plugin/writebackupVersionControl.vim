@@ -77,6 +77,10 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.30.017	22-Jan-2009	BF: :WriteBackupDiffWithPred failed to open the
+"				predecessor with the ':set autochdir' setting if
+"				the CWD has been (temporarily) changed. Now
+"				using absolute path for the :split command. 
 "   1.30.016	16-Jan-2009	Factored out s:ErrorMsg().
 "				Now setting v:errmsg on errors. 
 "   1.30.015	06-Jan-2009	:WriteBackupDiffWithPred doesn't jump to the
@@ -511,7 +515,11 @@ function! s:DiffWithPred( filespec )
 	else
 	    let l:splittype='diffsplit '
 	endif
-	execute l:splittype . escape( tr( l:predecessor, '\', '/'), ' \%#' )
+
+	" Expand the predecessor's filespec to an absolute path, because the CWD
+	" may change when a file is opened (e.g. due to autocmds or :set
+	" autochdir). 
+	execute l:splittype . escape( tr( fnamemodify(l:predecessor, ':p'), '\', '/'), ' \%#' )
 
 	" Return to original window. 
 	wincmd p
