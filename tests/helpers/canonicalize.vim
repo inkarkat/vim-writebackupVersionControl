@@ -1,9 +1,9 @@
-function! CanonicalizeFilespec( expr, filespec, replacement )
-    return substitute(substitute(a:expr, '\\', '/', 'g'), '\V' . substitute(a:filespec, '\\', '/', 'g') . '/\?', a:replacement, 'g')
+function! CanonicalizeFilespec( filespec, replacement )
+    execute '%s/\V' . substitute(a:filespec, '[/\\]', '\\[/\\\\]', 'g') . '\[/\\]\?/' . escape(a:replacement, '/\') . '/ge'
 endfunction
 
-function! CanonicalizeFilespecVariable( expr, filespecVariableName )
+function! CanonicalizeFilespecVariable( filespecVariableName )
     execute 'let l:filespec = ' . a:filespecVariableName
-    return CanonicalizeFilespec(a:expr, l:filespec, a:filespecVariableName)
+    return CanonicalizeFilespec(l:filespec, a:filespecVariableName)
 endfunction
 
