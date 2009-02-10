@@ -85,7 +85,7 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
-"				Renamed configuration variable from
+"   1.40.018	23-Jan-2009	Renamed configuration variable from
 "				g:writebackup_DiffVertSplit to
 "				g:WriteBackup_DiffVertSplit. 
 "				Added try...catch around all functions
@@ -93,6 +93,9 @@
 "				of error messages to throwing
 "				WriteBackupVersionControl exceptions in some
 "				places. 
+"				ENH: :WriteBackupListVersions now includes
+"				backup dirspec if backups aren't done in the
+"				original file's directory. 
 "   1.30.017	22-Jan-2009	BF: :WriteBackupDiffWithPred failed to open the
 "				predecessor with the ':set autochdir' setting if
 "				the CWD has been (temporarily) changed. Now
@@ -231,16 +234,16 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
 	" date file extension, and we can simply cut it off. 
 	let l:adjustedBackupFilespec = strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
 
-	let l:backupDir = ''
+	let l:backupDirspec = ''
 	try
-	    let l:backupDir = WriteBackup_GetBackupDir(l:adjustedBackupFilespec, 1)
+	    let l:backupDirspec = WriteBackup_GetBackupDir(l:adjustedBackupFilespec, 1)
 	catch
 	    " Ignore exceptions, they just signal that the backup dir could not
 	    " be determined or that a backup should not be written. We're just
 	    " interested in the backup dir here, but we can live with the fact
 	    " that the backup dir is unknown. 
 	endtry
-	if  l:backupDir == '.' && filereadable(l:adjustedBackupFilespec)
+	if  l:backupDirspec == '.' && filereadable(l:adjustedBackupFilespec)
 	    " If backups are created in the same directory, we can get the original
 	    " file by stripping off the date file extension. 
 	    " A buffer-local backup directory configuration which only exists for
@@ -294,6 +297,7 @@ function! s:GetAdjustedBackupFilespec( filespec )
 "* RETURN VALUES: 
 "   adjustedBackupFilespec; the backup directory may not yet exist when no
 "   backups have yet been made. 
+"   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
 "*******************************************************************************
     if s:IsOriginalFile( a:filespec )
 	return WriteBackup_AdjustFilespecForBackupDir( a:filespec, 1 )
@@ -610,6 +614,41 @@ function! s:EchoElapsedTimeSinceVersion( backupFile )
 
     echomsg l:message
 endfunction
+function! s:GetBackupDir( originalFilespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Resolves the directory that contains the backup files. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"	? List of any external variable, control, or other element whose state affects this procedure.
+"* EFFECTS / POSTCONDITIONS:
+"	? List of the procedure's effect on each external variable, control, or other element.
+"* INPUTS:
+"   a:originalFilespec
+"* RETURN VALUES: 
+"   dirspec representing the backup directory, '.' if equal to the original
+"   file's directory. 
+"   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
+"*******************************************************************************
+    let l:backupDirspec = WriteBackup_GetBackupDir(a:originalFilespec, 1)
+    if l:backupDirspec ==# '.'
+	return l:backupDirspec
+    endif
+
+    " Convert both original file's directory and backup directory to absolute
+    " paths in order to compare for equality. 
+    let l:originalDirspec = fnamemodify(a:originalFilespec, ':p:h')
+    " Note: Must use :p:h modifier on dirspec to remove trailing path separator
+    " left by :p. 
+    let l:absoluteBackupDirspec = fnamemodify(l:backupDirspec, ':p:h')
+    if l:absoluteBackupDirspec ==# l:originalDirspec
+	return '.'
+    endif
+
+    " The backup dir is (or at least, looks) different from the original file's. 
+    " Return either full absolute path or relative to home directory, if
+    " possible. 
+    return fnamemodify(l:absoluteBackupDirspec, ':~')
+endfunction
 function! s:ListVersions( filespec )
 "*******************************************************************************
 "* PURPOSE:
@@ -626,13 +665,14 @@ function! s:ListVersions( filespec )
     try
 	let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 1 )
 	let l:currentVersion = s:GetVersion( a:filespec )
+	let l:backupDirspec = s:GetBackupDir(l:originalFilespec)
 	let l:backupfiles = s:GetAllBackupsForFile(a:filespec)
 	if empty( l:backupfiles )
 	    echomsg "No backups exist for this file."
 	    return
 	endif
 
-	let l:versionMessageHeader = "These backups exist for file '" . l:originalFilespec . "'"
+	let l:versionMessageHeader = "These backups exist for file '" . l:originalFilespec . "'" . (l:backupDirspec =~# '^\.\?$' ? '' : ' in ' . l:backupDirspec)
 	let l:versionMessageHeader .= ( empty(l:currentVersion) ? ': ' : ' (current version is marked >x<): ')
 	echomsg l:versionMessageHeader
 
@@ -880,6 +920,7 @@ function! s:WriteBackupOfSavedOriginal( filespec )
 "	? Explanation of each argument that isn't obvious.
 "* RETURN VALUES: 
 "   Throws 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
+"   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
 "*******************************************************************************
     try
 	if ! s:IsOriginalFile( a:filespec )
