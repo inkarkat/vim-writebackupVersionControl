@@ -85,6 +85,8 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.40.019	11-Feb-2009	Factored out s:WarningMsg(). 
+"				Now using printf() for complex messages. 
 "   1.40.018	23-Jan-2009	Renamed configuration variable from
 "				g:writebackup_DiffVertSplit to
 "				g:WriteBackup_DiffVertSplit. 
@@ -197,6 +199,12 @@ function! s:ErrorMsg( text )
     echohl ErrorMsg
     let v:errmsg = a:text
     echomsg v:errmsg
+    echohl None
+endfunction
+function! s:WarningMsg( text )
+    echohl WarningMsg
+    let v:warningmsg = a:text
+    echomsg v:warningmsg
     echohl None
 endfunction
 function! s:ExceptionMsg( exception )
@@ -736,9 +744,7 @@ function! s:IsBackedUp( filespec )
 	" performing an actual diff; we're not interested in the differences,
 	" anyway, only if there *are* any!
 	if getfsize( l:predecessor ) != getfsize( a:filespec )
-	    echohl WarningMsg
-	    echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'."
-	    echohl None
+	    call s:WarningMsg(printf("The current %sversion of '%s' is different from the latest backup version '%s'.", l:savedMsg, a:filespec, s:GetVersion(l:predecessor)))
 	    return
 	endif
 
@@ -755,11 +761,9 @@ function! s:IsBackedUp( filespec )
 "****D echo '**** diff return code=' . v:shell_error
 
 	if v:shell_error == 0
-	    echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is identical with the latest backup version '" . s:GetVersion( l:predecessor ) . "'."
+	    echomsg printf("The current %sversion of '%s' is identical with the latest backup version '%s'.", l:savedMsg, a:filespec, s:GetVersion(l:predecessor))
 	elseif v:shell_error == 1
-	    echohl WarningMsg
-	    echomsg "The current " . l:savedMsg . "version of '" . a:filespec . "' is different from the latest backup version '" . s:GetVersion( l:predecessor ) . "'."
-	    echohl None
+	    call s:WarningMsg(printf("The current %sversion of '%s' is different from the latest backup version '%s'.", l:savedMsg, a:filespec, s:GetVersion(l:predecessor)))
 	elseif v:shell_error >= 2
 	    throw "WriteBackupVersionControl: Encountered problems with the 'diff' tool. Unable to compare with latest backup."
 	endif
@@ -864,7 +868,7 @@ function! s:RestoreFromPred( originalFilespec )
 	    return
 	endif
 
-	if s:Restore( l:predecessor, a:originalFilespec, "Really override this file with backup '" . s:GetVersion( l:predecessor ) . "'?" )
+	if s:Restore( l:predecessor, a:originalFilespec, printf("Really override this file with backup '%s'?", s:GetVersion(l:predecessor) ))
 	    edit!
 	endif
     catch /^WriteBackup\%(VersionControl\):/
@@ -899,7 +903,7 @@ function! s:RestoreThisBackup( filespec )
 	    return
 	endif
 
-	if s:Restore( a:filespec, l:originalFilespec, "Really override '" . l:originalFilespec . "' with this backup '" . l:currentVersion . "'?" )
+	if s:Restore( a:filespec, l:originalFilespec, printf("Really override '%s' with this backup '%s'?", l:originalFilespec, l:currentVersion) )
 	    execute 'edit! ' . escape( tr( l:originalFilespec, '\', '/'), ' \%#' )
 	endif
     catch /^WriteBackup\%(VersionControl\):/
