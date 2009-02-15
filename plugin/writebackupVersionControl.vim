@@ -84,7 +84,10 @@
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
+let s:version = 140
 " REVISION	DATE		REMARKS 
+"   1.40.020	13-Feb-2009	Extracted version number and put on a more
+"				prominent place, so that it gets updated. 
 "   1.40.019	11-Feb-2009	Factored out s:WarningMsg(). 
 "				Now using printf() for complex messages. 
 "   1.40.018	23-Jan-2009	Renamed configuration variable from
@@ -181,7 +184,7 @@ if ! exists('g:loaded_writebackup') || g:loaded_writebackup < 120
     echomsg 'writebackupVersionControl: You need a newer version of writebackup.vim plugin.'
     finish
 endif
-let g:loaded_writebackupVersionControl = 120
+let g:loaded_writebackupVersionControl = s:version
 
 
 
@@ -954,4 +957,5 @@ command! -bar WriteBackupRestoreThisBackup	call <SID>RestoreThisBackup(expand('%
 "command! -bar WriteBackupDeleteLastBackup
 command! -bar WriteBackupOfSavedOriginal	call <SID>WriteBackupOfSavedOriginal(expand('%'))
 
+unlet s:version
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
