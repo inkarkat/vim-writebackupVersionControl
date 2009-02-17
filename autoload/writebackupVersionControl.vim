@@ -3,8 +3,6 @@
 " (format '.YYYYMMDD[a-z]'). 
 "
 " DEPENDENCIES:
-"   - Requires VIM 7.0 or higher. 
-"   - Requires writebackup.vim (vimscript #1828). 
 "   - External commands 'diff', 'cp' (Unix), 'copy' (Windows). 
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
@@ -12,10 +10,15 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
-let s:version = 150
 " REVISION	DATE		REMARKS 
 "   1.50.001	17-Feb-2009	Moved functions from plugin to separate autoload
 "				script. 
+"				writebackup.vim has replaced its global
+"				WriteBackup_...() functions with autoload
+"				functions writebackup#...(). This is an
+"				incompatible change that also requires the
+"				corresponding changes in here. 
+"				file creation
 
 let s:versionRegexp = '\.[12]\d\d\d\d\d\d\d[a-z]$'
 let s:versionFileGlob = '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]'
@@ -71,7 +74,7 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
 
 	let l:backupDirspec = ''
 	try
-	    let l:backupDirspec = WriteBackup_GetBackupDir(l:adjustedBackupFilespec, 1)
+	    let l:backupDirspec = writebackup#GetBackupDir(l:adjustedBackupFilespec, 1)
 	catch
 	    " Ignore exceptions, they just signal that the backup dir could not
 	    " be determined or that a backup should not be written. We're just
@@ -89,7 +92,7 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
 	else
 	    " If backups are created in a different directory, the complete filespec
 	    " of the original file can not be derived from the adjusted backup
-	    " filespec, as WriteBackup_AdjustFilespecForBackupDir() (potentially) is
+	    " filespec, as writebackup#AdjustFilespecForBackupDir() (potentially) is
 	    " a one-way transformation from multiple directories to one backup
 	    " directory. 
 	    "
@@ -135,7 +138,7 @@ function! s:GetAdjustedBackupFilespec( filespec )
 "   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
 "*******************************************************************************
     if s:IsOriginalFile( a:filespec )
-	return WriteBackup_AdjustFilespecForBackupDir( a:filespec, 1 )
+	return writebackup#AdjustFilespecForBackupDir( a:filespec, 1 )
     else
 	return strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
     endif
@@ -464,7 +467,7 @@ function! s:GetBackupDir( originalFilespec )
 "   file's directory. 
 "   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
 "*******************************************************************************
-    let l:backupDirspec = WriteBackup_GetBackupDir(a:originalFilespec, 1)
+    let l:backupDirspec = writebackup#GetBackupDir(a:originalFilespec, 1)
     if l:backupDirspec ==# '.'
 	return l:backupDirspec
     endif
@@ -758,7 +761,7 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( filespec )
 	    throw 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
 	endif
 
-	let l:backupfilename = WriteBackup_GetBackupFilename( a:filespec )
+	let l:backupfilename = writebackup#GetBackupFilename( a:filespec )
 	call s:Copy(  a:filespec, l:backupfilename )
 	echomsg '"' . l:backupfilename . '" written'
     catch /^WriteBackup\%(VersionControl\):/
