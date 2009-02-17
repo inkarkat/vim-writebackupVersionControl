@@ -11,6 +11,10 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   1.50.002	18-Feb-2009	BF: :WriteBackupListVersions now handles (and
+"				reports) backup files with a future date. (This
+"				can happen when writing on a Samba share that
+"				has a different clock setting.)
 "   1.50.001	17-Feb-2009	Moved functions from plugin to separate autoload
 "				script. 
 "				writebackup.vim has replaced its global
@@ -19,6 +23,9 @@
 "				incompatible change that also requires the
 "				corresponding changes in here. 
 "				file creation
+
+let s:save_cpo = &cpo
+set cpo&vim
 
 let s:versionRegexp = '\.[12]\d\d\d\d\d\d\d[a-z]$'
 let s:versionFileGlob = '.[12][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z]'
@@ -440,15 +447,27 @@ function! s:EchoElapsedTimeSinceVersion( backupFile )
 "   none
 "*******************************************************************************
     let l:timeElapsed = localtime() - getftime( a:backupFile )
+    let l:isBackupInFuture = 0
+    if l:timeElapsed < 0
+	let l:timeElapsed = -1 * l:timeElapsed
+	let l:isBackupInFuture = 1
+    endif
+
     let l:secondsElapsed = l:timeElapsed % 60
     let l:minutesElapsed = (l:timeElapsed / 60) % 60
     let l:hoursElapsed = (l:timeElapsed / 3600) % 24
     let l:daysElapsed = (l:timeElapsed / (3600 * 24))
-    let l:message = 'The last backup was done '
-    if l:daysElapsed > 0
-	let l:message .= l:daysElapsed . ' days, '
-    endif
-    let l:message .= s:DualDigit(l:hoursElapsed) . ':' . s:DualDigit(l:minutesElapsed) . ':' . s:DualDigit(l:secondsElapsed) . ' ago.'
+
+    let l:message = printf(
+    \	(l:isBackupInFuture ?
+    \	    'The last backup has a modification date %s%s:%s:%s in the future?!' :
+    \	    'The last backup was done %s%s:%s:%s ago.'
+    \	),
+    \	(l:daysElapsed > 0 ? l:daysElapsed . ' days, ' : ''),
+    \	s:DualDigit(l:hoursElapsed),
+    \	s:DualDigit(l:minutesElapsed),
+    \	s:DualDigit(l:secondsElapsed)
+    \)
 
     echomsg l:message
 endfunction
@@ -771,5 +790,8 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( filespec )
 	call s:ErrorMsg('Failed to backup file: ' . v:exception)
     endtry
 endfunction
+
+let &cpo = s:save_cpo
+unlet s:save_cpo
 
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
