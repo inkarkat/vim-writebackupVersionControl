@@ -125,7 +125,7 @@ endif
 let g:loaded_writebackupVersionControl = s:version
 
 "- configuration --------------------------------------------------------------
-" Allow user to specify diffsplit of horiz. or vert.
+" Allow user to choose between vertical or horizontal diffsplit. 
 if ! exists('g:WriteBackup_DiffVertSplit')
     let g:WriteBackup_DiffVertSplit = 1  " Default to split for diff vertically. 
 endif
