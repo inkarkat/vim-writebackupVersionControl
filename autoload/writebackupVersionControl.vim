@@ -11,11 +11,20 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
-"   1.50.002	18-Feb-2009	BF: :WriteBackupListVersions now handles (and
+"   2.00.002	18-Feb-2009	BF: :WriteBackupListVersions now handles (and
 "				reports) backup files with a future date. (This
 "				can happen when writing on a Samba share that
 "				has a different clock setting.)
-"   1.50.001	17-Feb-2009	Moved functions from plugin to separate autoload
+"				Exposed
+"				writebackupVersionControl#IsOriginalFile()
+"				function for writebackup.vim so that it can
+"				disallow backup of backup file. 
+"				BF: Didn't correctly catch writebackup.vim
+"				exceptions. This could happen when running out
+"				of backup names in :WriteBackupOfSavedOriginal. 
+"				Added '--' argument to Unix 'cp' command so that
+"				files starting with '-' are copied correctly. 
+"   2.00.001	17-Feb-2009	Moved functions from plugin to separate autoload
 "				script. 
 "				writebackup.vim has replaced its global
 "				WriteBackup_...() functions with autoload
@@ -45,11 +54,11 @@ function! s:WarningMsg( text )
     echohl None
 endfunction
 function! s:ExceptionMsg( exception )
-    call s:ErrorMsg(substitute(v:exception, '^WriteBackup\%(VersionControl\):\s*', '', ''))
+    call s:ErrorMsg(substitute(v:exception, '^WriteBackup\%(VersionControl\)\?:\s*', '', ''))
 endfunction
 
 "- conversion functions -------------------------------------------------------
-function! s:IsOriginalFile( filespec )
+function! writebackupVersionControl#IsOriginalFile( filespec )
     return a:filespec !~? s:versionRegexp
 endfunction
 
@@ -72,7 +81,7 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
 "* RETURN VALUES: 
 "	original filespec, or empty string, or approximation
 "*******************************************************************************
-    if s:IsOriginalFile( a:filespec )
+    if writebackupVersionControl#IsOriginalFile( a:filespec )
 	return a:filespec
     else
 	" Since a:filespec is no original file, it thusly ends with the backup
@@ -119,7 +128,7 @@ function! s:GetOriginalFilespec( filespec, isForDisplayingOnly )
 endfunction
 
 function! s:GetVersion( filespec )
-    if ! s:IsOriginalFile( a:filespec )
+    if ! writebackupVersionControl#IsOriginalFile( a:filespec )
 	return strpart( a:filespec, len( a:filespec ) - s:versionLength + 1 )
     else
 	return ''
@@ -144,7 +153,7 @@ function! s:GetAdjustedBackupFilespec( filespec )
 "   backups have yet been made. 
 "   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
 "*******************************************************************************
-    if s:IsOriginalFile( a:filespec )
+    if writebackupVersionControl#IsOriginalFile( a:filespec )
 	return writebackup#AdjustFilespecForBackupDir( a:filespec, 1 )
     else
 	return strpart( a:filespec, 0, len( a:filespec ) - s:versionLength )
@@ -168,7 +177,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 "* RETURN VALUES: 
 "   empty string if verification failed; filespec of predecessor otherwise. 
 "*******************************************************************************
-    if ! s:IsOriginalFile( a:filespec )
+    if ! writebackupVersionControl#IsOriginalFile( a:filespec )
 	call s:ErrorMsg(a:notOriginalMessage)
 	return ''
     endif
@@ -274,7 +283,7 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
 "*******************************************************************************
     let l:backupfiles = s:GetAllBackupsForFile(a:filespec)
     let l:lastBackupIndex = len(l:backupfiles) - 1
-    let l:currentIndex = (s:IsOriginalFile(a:filespec) ? l:lastBackupIndex + 1 : s:GetIndexOfVersion( l:backupfiles, s:GetVersion(a:filespec) ))
+    let l:currentIndex = (writebackupVersionControl#IsOriginalFile(a:filespec) ? l:lastBackupIndex + 1 : s:GetIndexOfVersion( l:backupfiles, s:GetVersion(a:filespec) ))
 
     if l:currentIndex < 0
 	call s:ErrorMsg("Couldn't locate this backup: " . a:filespec)
@@ -338,7 +347,7 @@ function! writebackupVersionControl#WriteBackupGoOriginal( filespec, isBang )
 "   None. 
 "*******************************************************************************
     try
-	if s:IsOriginalFile( a:filespec )
+	if writebackupVersionControl#IsOriginalFile( a:filespec )
 	    echomsg "This is the original file."
 	    return
 	endif
@@ -349,7 +358,7 @@ function! writebackupVersionControl#WriteBackupGoOriginal( filespec, isBang )
 	else
 	    call s:EditFile(l:originalFilespec, a:isBang)
 	endif
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
@@ -371,7 +380,7 @@ function! writebackupVersionControl#WriteBackupGoBackup( filespec, isBang, relat
 "*******************************************************************************
     try
 	call s:EditFile( s:GetRelativeBackup( a:filespec, a:relativeIndex ), a:isBang )
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
@@ -408,7 +417,7 @@ function! writebackupVersionControl#DiffWithPred( filespec )
 	    " Return to original window. 
 	    wincmd p
 	endif
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
@@ -558,7 +567,7 @@ function! writebackupVersionControl#ListVersions( filespec )
 	    let l:lastBackupFile = l:backupfiles[-1]
 	    call s:EchoElapsedTimeSinceVersion( l:lastBackupFile )
 	endif
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
@@ -616,7 +625,7 @@ function! writebackupVersionControl#IsBackedUp( filespec )
 	elseif v:shell_error >= 2
 	    throw "WriteBackupVersionControl: Encountered problems with the 'diff' tool. Unable to compare with latest backup."
 	endif
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
@@ -645,7 +654,7 @@ function! s:Copy( source, target )
     if has('win32') || has('win64')
 	let l:copyCmd = 'copy /Y "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
     elseif has('unix')
-	let l:copyCmd = 'cp "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
+	let l:copyCmd = 'cp -- "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
     else
 	throw 'WriteBackupVersionControl: Unsupported operating system type.'
     endif
@@ -720,7 +729,7 @@ function! writebackupVersionControl#RestoreFromPred( originalFilespec )
 	if s:Restore( l:predecessor, a:originalFilespec, printf("Really override this file with backup '%s'?", s:GetVersion(l:predecessor) ))
 	    edit!
 	endif
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
@@ -755,7 +764,7 @@ function! writebackupVersionControl#RestoreThisBackup( filespec )
 	if s:Restore( a:filespec, l:originalFilespec, printf("Really override '%s' with this backup '%s'?", l:originalFilespec, l:currentVersion) )
 	    execute 'edit! ' . escape( tr( l:originalFilespec, '\', '/'), ' \%#' )
 	endif
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
@@ -776,14 +785,14 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( filespec )
 "   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
 "*******************************************************************************
     try
-	if ! s:IsOriginalFile( a:filespec )
+	if ! writebackupVersionControl#IsOriginalFile( a:filespec )
 	    throw 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
 	endif
 
 	let l:backupfilename = writebackup#GetBackupFilename( a:filespec )
 	call s:Copy(  a:filespec, l:backupfilename )
 	echomsg '"' . l:backupfilename . '" written'
-    catch /^WriteBackup\%(VersionControl\):/
+    catch /^WriteBackup\%(VersionControl\)\?:/
 	" Report problem. Probably, all backup letters a-z are already used. 
 	call s:ExceptionMsg(v:exception)
     catch
