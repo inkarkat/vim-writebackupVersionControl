@@ -172,7 +172,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   none
 "* EFFECTS / POSTCONDITIONS:
-"   none
+"   Prints error message. 
 "* INPUTS:
 "   a:filespec	backup or original file
 "   a:notOriginalMessage
@@ -184,7 +184,10 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( filespec, notOriginalMessage 
 	return ''
     endif
 
-    let l:predecessor = s:GetRelativeBackup( a:filespec, -1 )
+    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:filespec, -1 )
+    if ! empty(l:errorMessage)
+	call s:ErrorMsg(l:errorMessage)
+    endif
     return l:predecessor
 endfunction
 
@@ -280,32 +283,29 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
 "   a:relativeIndex Negative numbers select predecessors, positive numbers
 "	later versions. 
 "* RETURN VALUES: 
-"   Filespec of the backup version, or empty string if no such version
-"   exists.  
+"   List of 
+"   - Filespec of the backup version, or empty string if no such version exists.  
+"   - Error message if no such version exists. 
+"   Either the first or the second list element is an empty string. 
 "*******************************************************************************
     let l:backupfiles = s:GetAllBackupsForFile(a:filespec)
     let l:lastBackupIndex = len(l:backupfiles) - 1
     let l:currentIndex = (writebackupVersionControl#IsOriginalFile(a:filespec) ? l:lastBackupIndex + 1 : s:GetIndexOfVersion( l:backupfiles, s:GetVersion(a:filespec) ))
 
     if l:currentIndex < 0
-	call s:ErrorMsg("Couldn't locate this backup: " . a:filespec)
-	return ''
+	return ['', "Couldn't locate this backup: " . a:filespec]
     elseif l:lastBackupIndex < 0
-	call s:ErrorMsg('No backups exist for this file.')
-	return ''
+	return ['', 'No backups exist for this file.']
     elseif a:relativeIndex > 0 && l:currentIndex == l:lastBackupIndex
-	call s:ErrorMsg("This is the latest backup: " . a:filespec)
-	return ''
+	return ['', "This is the latest backup: " . a:filespec]
     elseif a:relativeIndex > 0 && l:currentIndex > l:lastBackupIndex
-	call s:ErrorMsg('Cannot go beyond original file.')
-	return ''
+	return ['', 'Cannot go beyond original file.']
     elseif a:relativeIndex < 0 && l:currentIndex == 0
-	call s:ErrorMsg('This is the earliest backup: ' . a:filespec)
-	return ''
+	return ['', 'This is the earliest backup: ' . a:filespec]
     endif
 
     let l:newIndex = min([max([l:currentIndex + a:relativeIndex, 0]), l:lastBackupIndex])
-    return get( l:backupfiles, l:newIndex, '' )
+    return [get( l:backupfiles, l:newIndex, '' ), '']
 endfunction
 
 function! s:EditFile( filespec, isBang )
@@ -323,15 +323,13 @@ function! s:EditFile( filespec, isBang )
 "* RETURN VALUES: 
 "   None. 
 "*******************************************************************************
-    if ! empty(a:filespec)
-	try
-	    execute 'edit' . (a:isBang ? '!' : '') escape( tr( a:filespec, '\', '/'), ' \%#' )
-	catch /^Vim\%((\a\+)\)\=:E/
-	    " v:exception contains what is normally in v:errmsg, but with extra
-	    " exception source info prepended, which we cut away. 
-	    call s:ErrorMsg(substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', ''))
-	endtry
-    endif
+    try
+	execute 'edit' . (a:isBang ? '!' : '') escape( tr( a:filespec, '\', '/'), ' \%#' )
+    catch /^Vim\%((\a\+)\)\=:E/
+	" v:exception contains what is normally in v:errmsg, but with extra
+	" exception source info prepended, which we cut away. 
+	call s:ErrorMsg(substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', ''))
+    endtry
 endfunction
 function! writebackupVersionControl#WriteBackupGoOriginal( filespec, isBang )
 "*******************************************************************************
@@ -381,7 +379,12 @@ function! writebackupVersionControl#WriteBackupGoBackup( filespec, isBang, relat
 "   None. 
 "*******************************************************************************
     try
-	call s:EditFile( s:GetRelativeBackup( a:filespec, a:relativeIndex ), a:isBang )
+	let [l:backupFilespec, l:errorMessage] = s:GetRelativeBackup(a:filespec, a:relativeIndex)
+	if empty(l:errorMessage)
+	    call s:EditFile(l:backupFilespec, a:isBang)
+	else
+	    call s:ErrorMsg(l:errorMessage)
+	endif
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
     endtry
@@ -401,8 +404,10 @@ function! writebackupVersionControl#DiffWithPred( filespec )
 "   none
 "*******************************************************************************
     try
-	let l:predecessor = s:GetRelativeBackup( a:filespec, -1 )
-	if ! empty( l:predecessor )
+	let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:filespec, -1 )
+	if ! empty(l:errorMessage)
+	    call s:ErrorMsg(l:errorMessage)
+	else
 "****D echo '**** predecessor is ' . l:predecessor
 	    " Close all folds before :diffsplit; this avoids that a previous (open)
 	    " fold status at the cursor position is remembered and obscures the
@@ -443,10 +448,10 @@ function! s:DualDigit( number )
     endwhile
     return strpart( l:digits, 0, 2 )
 endfunction
-function! s:EchoElapsedTimeSinceVersion( backupFile )
+function! s:EchoElapsedTimeSinceVersion( backupFilespec )
 "*******************************************************************************
 "* PURPOSE:
-"   Informs the user about the elapsed time since the passed a:backupFile has
+"   Informs the user about the elapsed time since the passed a:backupFilespec has
 "   been modified. 
 "* ASSUMPTIONS / PRECONDITIONS:
 "	? List of any external variable, control, or other element whose state affects this procedure.
@@ -457,7 +462,7 @@ function! s:EchoElapsedTimeSinceVersion( backupFile )
 "* RETURN VALUES: 
 "   none
 "*******************************************************************************
-    let l:timeElapsed = localtime() - getftime( a:backupFile )
+    let l:timeElapsed = localtime() - getftime( a:backupFilespec )
     let l:isBackupInFuture = 0
     if l:timeElapsed < 0
 	let l:timeElapsed = -1 * l:timeElapsed
