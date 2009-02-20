@@ -3,7 +3,7 @@
 " (format '.YYYYMMDD[a-z]'). 
 "
 " DEPENDENCIES:
-"   - External commands 'diff', 'cp' (Unix), 'copy' (Windows). 
+"   - External copy command 'cp' (Unix), 'copy' (Windows). 
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -11,6 +11,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.00.003	19-Feb-2009	ENH: Now using compare shell command configured
+"				in g:WriteBackup_CompareShellCommand. 
 "   2.00.002	18-Feb-2009	BF: :WriteBackupListVersions now handles (and
 "				reports) backup files with a future date. (This
 "				can happen when writing on a Samba share that
@@ -611,19 +613,24 @@ function! writebackupVersionControl#IsBackedUp( filespec )
 	let l:predecessorFilespec = fnamemodify( l:predecessor, ':p' )
 	let l:originalFilespec = fnamemodify( a:filespec, ':p' )
 
-	" Note: We could save the effort of outputting the diff output to the
-	" console if that didn't introduce platform-dependent code (NUL vs.
-	" /dev/null) and meddling with the 'shellredir' setting. 
-	let l:diffCmd = 'diff "' . l:predecessorFilespec . '" "' . l:originalFilespec . '"'
+	if empty(g:WriteBackup_CompareShellCommand)
+	    throw 'WriteBackupVersionControl: No compare shell command configured. Unable to compare with latest backup.'
+	endif
+	" Using the system() command even though we're not interested in the
+	" command output (which is suppressed via command-line arguments to the
+	" compare shell command, anyway). This is because on Windows GVIM, the
+	" system() call does not (briefly) open a Windows shell window, but
+	" ':silent !{cmd}' does. 
+	let l:diffCmd = g:WriteBackup_CompareShellCommand . ' "' . l:predecessorFilespec . '" "' . l:originalFilespec . '"'
 	call system( l:diffCmd )
-"****D echo '**** diff return code=' . v:shell_error
+"****D echo '**** ' . g:WriteBackup_CompareShellCommand . ' return code=' . v:shell_error
 
 	if v:shell_error == 0
 	    echomsg printf("The current %sversion of '%s' is identical with the latest backup version '%s'.", l:savedMsg, a:filespec, s:GetVersion(l:predecessor))
 	elseif v:shell_error == 1
 	    call s:WarningMsg(printf("The current %sversion of '%s' is different from the latest backup version '%s'.", l:savedMsg, a:filespec, s:GetVersion(l:predecessor)))
-	elseif v:shell_error >= 2
-	    throw "WriteBackupVersionControl: Encountered problems with the 'diff' tool. Unable to compare with latest backup."
+	else
+	    throw printf("WriteBackupVersionControl: Encountered problems with '%s' invocation. Unable to compare with latest backup.", g:WriteBackup_CompareShellCommand)
 	endif
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
