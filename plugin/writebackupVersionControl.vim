@@ -4,8 +4,11 @@
 "
 " DEPENDENCIES:
 "   - Requires VIM 7.0 or higher. 
+"
 "   - writebackup.vim (vimscript #1828). 
 "   - writebackupVersionControl.vim autoload script. 
+"
+"   - External compare shell commands 'cmp' or 'diff'. 
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -14,6 +17,8 @@
 "
 let s:version = 200
 " REVISION	DATE		REMARKS 
+"   2.00.024	19-Feb-2009	ENH: Allowing to configure compare shell command
+"				via g:WriteBackup_CompareShellCommand. 
 "   2.00.023	18-Feb-2009	Added check for same major version of
 "				writebackup.vim, so that too new (=
 "				incompatible) versions are reported, too. 
@@ -128,6 +133,19 @@ let g:loaded_writebackupVersionControl = s:version
 " Allow user to choose between vertical or horizontal diffsplit. 
 if ! exists('g:WriteBackup_DiffVertSplit')
     let g:WriteBackup_DiffVertSplit = 1  " Default to split for diff vertically. 
+endif
+
+" Shell command used to compare two files to find out whether they are
+" identical. The command must take two filespec arguments, return 0 for
+" identical files, 1 for different files and anything else for trouble. 
+if ! exists('g:WriteBackup_CompareShellCommand')
+    if executable('cmp')
+	" -s	Print nothing for differing files. 
+	let g:WriteBackup_CompareShellCommand = 'cmp -s'
+    elseif executable('diff')
+	" -q	Report no details of the differences. 
+	let g:WriteBackup_CompareShellCommand = 'diff -q'
+    endif
 endif
 
 "- commands -------------------------------------------------------------------
