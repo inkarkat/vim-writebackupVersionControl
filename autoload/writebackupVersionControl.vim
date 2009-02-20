@@ -584,6 +584,7 @@ function! s:AreIdentical( filespec1, filespec2 )
 "   a:filespec1, a:filespec2	    Filespecs of the files. 
 "* RETURN VALUES: 
 "   Boolean whether the file contents are identical. 
+"   Throws 'WriteBackupVersionControl: Encountered problems...' 
 "*******************************************************************************
     " Optimization: First compare the file sizes, as this is much faster than
     " performing an actual comparison; we're not interested in the differences,
@@ -615,6 +616,39 @@ function! s:AreIdentical( filespec1, filespec2 )
 	throw printf("WriteBackupVersionControl: Encountered problems with '%s' invocation. Unable to compare with latest backup.", g:WriteBackup_CompareShellCommand)
     endif
 endfunction
+function! writebackupVersionControl#GetCurrentBackup( originalFilespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Queries whether there exists an up-to-date (i.e. identical with the current
+"   saved version of the passed original file) backup, and returns its version. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   None. 
+"* EFFECTS / POSTCONDITIONS:
+"   None. 
+"* INPUTS:
+"   a:originalFilespec	Original file.
+"* RETURN VALUES: 
+"   Backup version or empty string if no (up-to-date) backup exists, or the
+"   passed file is a backup itself. 
+"   Throws 'WriteBackupVersionControl: Encountered problems...' 
+"*******************************************************************************
+    if ! writebackupVersionControl#IsOriginalFile( a:originalFilespec )
+	" The passed file is a backup itself. 
+	return ''
+    endif
+
+    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:originalFilespec, -1 )
+    if ! empty(l:errorMessage)
+	" No predecessor exists. 
+	return ''
+    endif
+
+    if s:AreIdentical(l:predecessor, a:originalFilespec)
+	return s:GetVersion(l:predecessor)
+    else
+	return ''
+    endif
+endfunction
 function! writebackupVersionControl#IsBackedUp( originalFilespec )
 "*******************************************************************************
 "* PURPOSE:
@@ -630,7 +664,6 @@ function! writebackupVersionControl#IsBackedUp( originalFilespec )
 "			error message). 
 "* RETURN VALUES: 
 "   None. 
-"   Throws 'WriteBackupVersionControl: Encountered problems...' 
 "*******************************************************************************
     try
 	let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:originalFilespec, 'You can only check the backup status of the original file, not of backups!' )
