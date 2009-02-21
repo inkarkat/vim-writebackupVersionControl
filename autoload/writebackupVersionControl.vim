@@ -3,7 +3,7 @@
 " (format '.YYYYMMDD[a-z]'). 
 "
 " DEPENDENCIES:
-"   - External copy command 'cp' (Unix), 'copy' (Windows). 
+"   - External copy command 'cp' (Unix), 'copy' and 'xcopy' (Windows). 
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -11,6 +11,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.00.005	22-Feb-2009	Added a:isForced argument to all functions that
+"				implement commands which now support forcing via
+"				!. 
 "   2.00.004	21-Feb-2009	Factored error reporting out of
 "				s:GetRelativeBackup() to allow the silent usage
 "				by the writebackup plugin. 
@@ -85,6 +88,10 @@ function! s:VimExceptionMsg( exception )
     " v:exception contains what is normally in v:errmsg, but with extra
     " exception source info prepended, which we cut away. 
     call s:ErrorMsg(substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', ''))
+endfunction
+
+function! s:IsFileReadonly( filespec )
+    return filereadable(a:filespec) && ! filewritable(a:filespec)
 endfunction
 
 "- conversion functions -------------------------------------------------------
@@ -705,11 +712,11 @@ function! writebackupVersionControl#IsBackedUp( originalFilespec )
     endtry
 endfunction
 
-function! s:Copy( source, target )
+function! s:Copy( source, target, isForced )
 "*******************************************************************************
 "* PURPOSE:
 "   Copies a:source to a:target. If a:target exists, it is overwritten (unless
-"   is is readonly, then the copy command will fail). 
+"   is is readonly, then the copy command will fail, unless a:isForced). 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None. 
 "* EFFECTS / POSTCONDITIONS:
@@ -717,6 +724,7 @@ function! s:Copy( source, target )
 "* INPUTS:
 "   a:source filespec
 "   a:target filespec
+"   a:isForced	Flag whether readonly targets should be overwritten. 
 "* RETURN VALUES: 
 "   None. 
 "   Throws 'WriteBackupVersionControl: Unsupported operating system type.'
@@ -728,23 +736,26 @@ function! s:Copy( source, target )
     let l:targetFilespec = fnamemodify( a:target, ':p' )
 
     if has('win32') || has('win64')
-	let l:copyCmd = 'copy /Y "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
+	" On Windows, 'copy' cannot overwrite a readonly target; only 'xcopy'
+	" can (with the /R option). 
+	let l:copyCmd = (s:IsFileReadonly(a:target) ? 'xcopy /Q /R /Y' : 'copy /Y') . ' "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
     elseif has('unix')
-	let l:copyCmd = 'cp -- "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
+	let l:copyCmd = (s:IsFileReadonly(a:target) ? 'cp -f' : 'cp') . ' -- "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
     else
 	throw 'WriteBackupVersionControl: Unsupported operating system type.'
     endif
 
-    let l:cmdOutput = system( l:copyCmd )
+    let l:cmdOutput = system(l:copyCmd)
     if v:shell_error != 0
 	throw l:cmdOutput
     endif
 endfunction
-function! s:Restore( source, target, confirmationMessage )
+function! s:Restore( source, target, isForced, confirmationMessage )
 "*******************************************************************************
 "* PURPOSE:
 "   Restores a:source over an existing a:target. The user is asked to confirm
-"   this destructive operation, using the passed a:confirmationMessage. 
+"   this destructive operation, using the passed a:confirmationMessage (unless
+"   a:isForced). 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None. 
 "* EFFECTS / POSTCONDITIONS:
@@ -752,15 +763,25 @@ function! s:Restore( source, target, confirmationMessage )
 "* INPUTS:
 "   a:source filespec
 "   a:target filespec
+"   a:isForced	Flag whether restore should proceed without confirmation and
+"		overwrite readonly original file. 
 "   a:confirmationMessage
 "* RETURN VALUES: 
 "   Boolean indicating whether the file has actually been restored. 
+"   Throws 'WriteBackupVersionControl: Cannot overwrite '<original-file>': 
+"	    'readonly' option is set' (unless a:isForced). 
 "   Throws 'WriteBackupVersionControl: Failed to restore file: <reason>'
 "*******************************************************************************
-    let l:response = confirm( a:confirmationMessage, "&No\n&Yes", 1, 'Question' )
-    if l:response != 2
-	echomsg 'Restore canceled.'
-	return 0
+    if ! a:isForced
+	if s:IsFileReadonly(a:target)
+	    throw printf("WriteBackupVersionControl: Cannot overwrite '%s': 'readonly' option is set", a:target)
+	else
+	    let l:response = confirm( a:confirmationMessage, "&No\n&Yes", 1, 'Question' )
+	    if l:response != 2
+		echomsg 'Restore canceled.'
+		return 0
+	    endif
+	endif
     endif
 
     " We could restore using only VIM functionality:
@@ -768,16 +789,17 @@ function! s:Restore( source, target, confirmationMessage )
     " 	normal ggdG
     " 	0read a:source
     " 	write
-    " But that would make the target's modification date different from the one
-    " of the source, which would fool superficial synchronization tools. 
-    " In addition, there's the (small) risk that VIM autocmds or settings like
-    " 'fileencoding' or 'fileformat' are now different from when the backup was
-    " written, and may thus lead to conversion errors or different file
-    " contents. 
+    " That would have the following disadvantages: 
+    " - the target's modification date would be different from the one
+    "   of the source, which would fool superficial synchronization tools. 
+    " - There's the (small) risk that VIM autocmds or settings like
+    "   'fileencoding' or 'fileformat' are now different from when the backup
+    "   was written, and may thus lead to conversion errors or different file
+    "   contents. 
     " Thus, we invoke an external command to create a perfect copy.
     " Unfortunately, this introduces platform-specific code. 
     try
-	call s:Copy( a:source, a:target )
+	call s:Copy(a:source, a:target, a:isForced)
     catch
 	throw 'WriteBackupVersionControl: Failed to restore file: ' . v:exception
     endtry
@@ -802,11 +824,11 @@ function! writebackupVersionControl#RestoreFromPred( originalFilespec, isForced 
 "*******************************************************************************
     try
 	let l:predecessor = s:VerifyIsOriginalFileAndHasPredecessor( a:originalFilespec, 'You can only restore the original file, not a backup!' )
-	if empty( l:predecessor )
+	if empty(l:predecessor)
 	    return
 	endif
 
-	if s:Restore( l:predecessor, a:originalFilespec, printf("Really override this file with backup '%s'?", s:GetVersion(l:predecessor) ))
+	if s:Restore( l:predecessor, a:originalFilespec, a:isForced, printf("Really override this file with backup '%s'?", s:GetVersion(l:predecessor) ))
 	    edit!
 	endif
     catch /^Vim\%((\a\+)\)\=:E/
@@ -833,20 +855,20 @@ function! writebackupVersionControl#RestoreThisBackup( filespec, isForced )
 "   None. 
 "*******************************************************************************
     try
-	let l:currentVersion = s:GetVersion( a:filespec )
-	if empty( l:currentVersion )
+	let l:currentVersion = s:GetVersion(a:filespec)
+	if empty(l:currentVersion)
 	    call s:ErrorMsg('You can only restore backup files!')
 	    return
 	endif
 
-	let l:originalFilespec = s:GetOriginalFilespec( a:filespec, 0 )
+	let l:originalFilespec = s:GetOriginalFilespec(a:filespec, 0)
 	if empty( l:originalFilespec )
 	    " TODO: 'Unable to determine the location of the original file; open it in another buffer.'
 	    call s:ErrorMsg('Unable to determine the location of the original file.')
 	    return
 	endif
 
-	if s:Restore( a:filespec, l:originalFilespec, printf("Really override '%s' with this backup '%s'?", l:originalFilespec, l:currentVersion) )
+	if s:Restore( a:filespec, l:originalFilespec, a:isForced, printf("Really override '%s' with this backup '%s'?", l:originalFilespec, l:currentVersion) )
 	    execute 'edit! ' . escape( tr( l:originalFilespec, '\', '/'), ' \%#' )
 	endif
     catch /^Vim\%((\a\+)\)\=:E/
@@ -879,11 +901,10 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
 	    throw 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
 	endif
 
-	let l:backupFilename = writebackup#GetBackupFilename(a:originalFilespec, 0)
-	call s:Copy(  a:originalFilespec, l:backupFilename )
+	let l:backupFilename = writebackup#GetBackupFilename(a:originalFilespec, a:isForced)
+	call s:Copy(a:originalFilespec, l:backupFilename, a:isForced)
 	echomsg '"' . l:backupFilename . '" written'
     catch /^WriteBackup\%(VersionControl\)\?:/
-	" Report problem. Probably, all backup letters a-z are already used. 
 	call s:ExceptionMsg(v:exception)
     catch
 	call s:ErrorMsg('Failed to backup file: ' . v:exception)
@@ -904,9 +925,10 @@ function! writebackupVersionControl#DeleteBackup( backupFilespec, isForced )
 "* RETURN VALUES: 
 "   None. 
 "   Throws 'WriteBackupVersionControl: Cannot delete original file!'
-"   Throws 'WriteBackupVersionControl: Cannot delete backup version ...
+"   Throws 'WriteBackupVersionControl: Cannot delete backup version '<version>':  
 "	    'readonly' option is set' (unless a:isForced). 
-"   Throws 'WriteBackupVersionControl: Failed to delete backup version ...'
+"   Throws 'WriteBackupVersionControl: Failed to delete backup version
+"	    '<version>''
 "*******************************************************************************
     if writebackupVersionControl#IsOriginalFile(a:backupFilespec)
 	throw 'WriteBackupVersionControl: Cannot delete original file!'
@@ -914,7 +936,7 @@ function! writebackupVersionControl#DeleteBackup( backupFilespec, isForced )
 
     " The delete() function also deletes readonly files without complaining, so
     " we need to explicitly check for readonly files to avoid that. 
-    if ! a:isForced && filereadable(a:backupFilespec) && ! filewritable(a:backupFilespec)
+    if ! a:isForced && s:IsFileReadonly(a:backupFilespec)
 	throw printf("WriteBackupVersionControl: Cannot delete backup version '%s': 'readonly' option is set", s:GetVersion(a:backupFilespec))
     endif
 
@@ -929,7 +951,7 @@ function! writebackupVersionControl#DeleteBackupLastBackup( filespec, isForced )
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None. 
 "* EFFECTS / POSTCONDITIONS:
-"   Removes the last backup file vrom the file system. 
+"   Removes the last backup file from the file system. 
 "   Prints (error) message. 
 "* INPUTS:
 "   a:filespec	Backup or original file.
@@ -946,13 +968,15 @@ function! writebackupVersionControl#DeleteBackupLastBackup( filespec, isForced )
 	endif
 	let l:lastBackupFile = l:backupFiles[-1]
 
-	let l:response = confirm( printf("Really delete backup '%s'?", s:GetVersion(l:lastBackupFile)), "&No\n&Yes", 1, 'Question' )
-	if l:response != 2
-	    echomsg 'Delete canceled.'
-	    return
+	if ! a:isForced
+	    let l:response = confirm( printf("Really delete backup '%s'?", s:GetVersion(l:lastBackupFile)), "&No\n&Yes", 1, 'Question' )
+	    if l:response != 2
+		echomsg 'Delete canceled.'
+		return
+	    endif
 	endif
 
-	call writebackupVersionControl#DeleteBackup(l:lastBackupFile, 0)
+	call writebackupVersionControl#DeleteBackup(l:lastBackupFile, a:isForced)
 
 	echomsg printf("Deleted backup '%s'; %s", 
 	\   s:GetVersion(l:lastBackupFile),
