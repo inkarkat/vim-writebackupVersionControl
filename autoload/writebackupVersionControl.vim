@@ -703,9 +703,9 @@ function! writebackupVersionControl#IsBackedUp( originalFilespec )
 	let l:savedMsg = (&l:modified ? 'saved ' : '') 
 
 	if s:AreIdentical(l:predecessor, a:originalFilespec)
-	    echomsg printf("The current %sversion of '%s' is identical with the latest backup version '%s'.", l:savedMsg, a:originalFilespec, s:GetVersion(l:predecessor))
+	    echomsg printf("The current %sversion of '%s' is identical with the latest backup '%s'.", l:savedMsg, a:originalFilespec, s:GetVersion(l:predecessor))
 	else
-	    call s:WarningMsg(printf("The current %sversion of '%s' is different from the latest backup version '%s'.", l:savedMsg, a:originalFilespec, s:GetVersion(l:predecessor)))
+	    call s:WarningMsg(printf("The current %sversion of '%s' is different from the latest backup '%s'.", l:savedMsg, a:originalFilespec, s:GetVersion(l:predecessor)))
 	endif
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
@@ -768,13 +768,13 @@ function! s:Restore( source, target, isForced, confirmationMessage )
 "   a:confirmationMessage
 "* RETURN VALUES: 
 "   Boolean indicating whether the file has actually been restored. 
-"   Throws 'WriteBackupVersionControl: Cannot overwrite '<original-file>': 
-"	    'readonly' option is set' (unless a:isForced). 
+"   Throws 'WriteBackupVersionControl: Cannot overwrite readonly
+"	    '<original-file>' (add ! to override)' (unless a:isForced). 
 "   Throws 'WriteBackupVersionControl: Failed to restore file: <reason>'
 "*******************************************************************************
     if ! a:isForced
 	if s:IsFileReadonly(a:target)
-	    throw printf("WriteBackupVersionControl: Cannot overwrite '%s': 'readonly' option is set", a:target)
+	    throw printf("WriteBackupVersionControl: Cannot overwrite readonly '%s' (add ! to override)", a:target)
 	else
 	    let l:response = confirm( a:confirmationMessage, "&No\n&Yes", 1, 'Question' )
 	    if l:response != 2
@@ -837,7 +837,6 @@ function! writebackupVersionControl#RestoreFromPred( originalFilespec, isForced 
 	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
-
 function! writebackupVersionControl#RestoreThisBackup( filespec, isForced )
 "*******************************************************************************
 "* PURPOSE:
@@ -925,8 +924,8 @@ function! writebackupVersionControl#DeleteBackup( backupFilespec, isForced )
 "* RETURN VALUES: 
 "   None. 
 "   Throws 'WriteBackupVersionControl: Cannot delete original file!'
-"   Throws 'WriteBackupVersionControl: Cannot delete backup version '<version>':  
-"	    'readonly' option is set' (unless a:isForced). 
+"   Throws 'WriteBackupVersionControl: Cannot delete readonly backup '<version>'
+"	    (add ! to override)' (unless a:isForced). 
 "   Throws 'WriteBackupVersionControl: Failed to delete backup version
 "	    '<version>''
 "*******************************************************************************
@@ -937,11 +936,11 @@ function! writebackupVersionControl#DeleteBackup( backupFilespec, isForced )
     " The delete() function also deletes readonly files without complaining, so
     " we need to explicitly check for readonly files to avoid that. 
     if ! a:isForced && s:IsFileReadonly(a:backupFilespec)
-	throw printf("WriteBackupVersionControl: Cannot delete backup version '%s': 'readonly' option is set", s:GetVersion(a:backupFilespec))
+	throw printf("WriteBackupVersionControl: Cannot delete readonly backup '%s' (add ! to override)", s:GetVersion(a:backupFilespec))
     endif
 
     if delete(a:backupFilespec) != 0
-	throw printf("WriteBackupVersionControl: Failed to delete backup version '%s'", s:GetVersion(a:backupFilespec))
+	throw printf("WriteBackupVersionControl: Failed to delete backup '%s'", s:GetVersion(a:backupFilespec))
     endif
 endfunction
 function! writebackupVersionControl#DeleteBackupLastBackup( filespec, isForced )
