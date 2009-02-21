@@ -11,6 +11,29 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.00.004	21-Feb-2009	Factored error reporting out of
+"				s:GetRelativeBackup() to allow the silent usage
+"				by the writebackup plugin. 
+"				Replaced s:DualDigit() with printf('%02d')
+"				formatting. 
+"				Factored out s:VimExceptionMsg() and added catch
+"				block for VIM errors in missing places. 
+"				Factored s:AreIdentical() out of
+"				writebackupVersionControl#IsBackedUp() and added
+"				public function
+"				writebackupVersionControl#IsIdenticalWithPredecessor()
+"				for the writebackup plugin so that it can avoid
+"				backup if an identical backup already exists. 
+"				Implemented
+"				writebackupVersionControl#DeleteBackup() to
+"				enable the writebackup plugin to remove an
+"				identical backup after the fact. 
+"				Implemented
+"				writebackupVersionControl#DeleteBackupLastBackup()
+"				for the :WriteBackupDeleteLastBackup command, as
+"				the actual delete functionality is now already
+"				there. 
+"				Refactored variables names and documentation. 
 "   2.00.003	19-Feb-2009	ENH: Now using compare shell command configured
 "				in g:WriteBackup_CompareShellCommand. 
 "   2.00.002	18-Feb-2009	BF: :WriteBackupListVersions now handles (and
@@ -19,7 +42,7 @@
 "				has a different clock setting.)
 "				Exposed
 "				writebackupVersionControl#IsOriginalFile()
-"				function for writebackup.vim so that it can
+"				function for writebackup plugin so that it can
 "				disallow backup of backup file. 
 "				BF: Didn't correctly catch writebackup.vim
 "				exceptions. This could happen when running out
@@ -353,7 +376,7 @@ function! writebackupVersionControl#WriteBackupGoOriginal( filespec, isBang )
 "*******************************************************************************
     try
 	if writebackupVersionControl#IsOriginalFile( a:filespec )
-	    echomsg "This is the original file."
+	    echomsg 'This is the original file.'
 	    return
 	endif
 
@@ -616,34 +639,29 @@ function! s:AreIdentical( filespec1, filespec2 )
 	throw printf("WriteBackupVersionControl: Encountered problems with '%s' invocation. Unable to compare with latest backup.", g:WriteBackup_CompareShellCommand)
     endif
 endfunction
-function! writebackupVersionControl#GetCurrentBackup( originalFilespec )
+function! writebackupVersionControl#IsIdenticalWithPredecessor( filespec )
 "*******************************************************************************
 "* PURPOSE:
-"   Queries whether there exists an up-to-date (i.e. identical with the current
-"   saved version of the passed original file) backup, and returns its version. 
+"   Queries whether the predecessor of the passed (backup or original) file is
+"   has the same contents. 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None. 
 "* EFFECTS / POSTCONDITIONS:
 "   None. 
 "* INPUTS:
-"   a:originalFilespec	Original file.
+"   a:filespec	Backup or original file. 
 "* RETURN VALUES: 
-"   Backup version or empty string if no (up-to-date) backup exists, or the
-"   passed file is a backup itself. 
+"   Backup version of the identical predecessor or empty string to indicate that
+"   either no backup exists, or the predecessor is different. 
 "   Throws 'WriteBackupVersionControl: Encountered problems...' 
 "*******************************************************************************
-    if ! writebackupVersionControl#IsOriginalFile( a:originalFilespec )
-	" The passed file is a backup itself. 
-	return ''
-    endif
-
-    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:originalFilespec, -1 )
+    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:filespec, -1 )
     if ! empty(l:errorMessage)
 	" No predecessor exists. 
 	return ''
     endif
 
-    if s:AreIdentical(l:predecessor, a:originalFilespec)
+    if s:AreIdentical(l:predecessor, a:filespec)
 	return s:GetVersion(l:predecessor)
     else
 	return ''
@@ -862,6 +880,61 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
 	call s:ExceptionMsg(v:exception)
     catch
 	call s:ErrorMsg('Failed to backup file: ' . v:exception)
+    endtry
+endfunction
+
+function! writebackupVersionControl#DeleteBackup( backupFilespec )
+"*******************************************************************************
+"* PURPOSE:
+"   Delete the passed backup file, if it is writable. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   The file a:backupFilespec exists. 
+"* EFFECTS / POSTCONDITIONS:
+"   Removes the passed backup file from the file system. 
+"* INPUTS:
+"   a:backupFilespec	Backup file. 
+"* RETURN VALUES: 
+"   None. 
+"   Throws 'WriteBackupVersionControl: Cannot delete original file!'
+"   Throws 'WriteBackupVersionControl: Cannot delete backup version ...
+"	    'readonly' option is set'
+"   Throws 'WriteBackupVersionControl: Failed to delete backup version ...'
+"*******************************************************************************
+    if writebackupVersionControl#IsOriginalFile(a:backupFilespec)
+	throw 'WriteBackupVersionControl: Cannot delete original file!'
+    endif
+
+    if filereadable(a:backupFilespec) && ! filewritable(a:backupFilespec)
+	throw printf("WriteBackupVersionControl: Cannot delete backup version '%s': 'readonly' option is set", s:GetVersion(a:backupFilespec))
+    endif
+
+    if delete(a:backupFilespec) != 0
+	throw printf("WriteBackupVersionControl: Failed to delete backup version '%s'", s:GetVersion(a:backupFilespec))
+    endif
+endfunction
+function! writebackupVersionControl#DeleteBackupLastBackup( filespec )
+    try
+	let l:backupFiles = s:GetAllBackupsForFile(a:filespec)
+	if len(l:backupFiles) == 0
+	    call s:ErrorMsg('No backups exist for this file.')
+	    return
+	endif
+	let l:lastBackupFile = l:backupFiles[-1]
+
+	let l:response = confirm( printf("Really delete backup '%s'?", s:GetVersion(l:lastBackupFile)), "&No\n&Yes", 1, 'Question' )
+	if l:response != 2
+	    echomsg 'Delete canceled.'
+	    return
+	endif
+
+	call writebackupVersionControl#DeleteBackup(l:lastBackupFile)
+
+	echomsg printf("Deleted backup '%s'; %s", 
+	\   s:GetVersion(l:lastBackupFile),
+	\   (len(l:backupFiles) == 1 ? 'no backups exist for this file any more.' : "last backup now is '" . s:GetVersion(l:backupFiles[-2]) . "'")
+	\)
+    catch /^WriteBackup\%(VersionControl\)\?:/
+	call s:ExceptionMsg(v:exception)
     endtry
 endfunction
 
