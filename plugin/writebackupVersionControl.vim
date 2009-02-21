@@ -17,6 +17,7 @@
 "
 let s:version = 200
 " REVISION	DATE		REMARKS 
+"   2.00.025	21-Feb-2009	ENH: Added :WriteBackupDeleteLastBackup command. 
 "   2.00.024	19-Feb-2009	ENH: Allowing to configure compare shell command
 "				via g:WriteBackup_CompareShellCommand. 
 "   2.00.023	18-Feb-2009	Added check for same major version of
@@ -157,8 +158,8 @@ command! -bar -bang WriteBackupGoOriginal	call writebackupVersionControl#WriteBa
 command! -bar WriteBackupIsBackedUp		call writebackupVersionControl#IsBackedUp(expand('%'))
 command! -bar WriteBackupRestoreFromPred	call writebackupVersionControl#RestoreFromPred(expand('%'))
 command! -bar WriteBackupRestoreThisBackup	call writebackupVersionControl#RestoreThisBackup(expand('%'))
-"command! -bar WriteBackupDeleteLastBackup
 command! -bar WriteBackupOfSavedOriginal	call writebackupVersionControl#WriteBackupOfSavedOriginal(expand('%'))
+command! -bar WriteBackupDeleteLastBackup	call writebackupVersionControl#DeleteBackupLastBackup(expand('%'))
 
 unlet s:version
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
