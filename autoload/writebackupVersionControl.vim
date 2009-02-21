@@ -872,7 +872,7 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
 	    throw 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
 	endif
 
-	let l:backupFilename = writebackup#GetBackupFilename( a:originalFilespec )
+	let l:backupFilename = writebackup#GetBackupFilename(a:originalFilespec, 0)
 	call s:Copy(  a:originalFilespec, l:backupFilename )
 	echomsg '"' . l:backupFilename . '" written'
     catch /^WriteBackup\%(VersionControl\)\?:/
