@@ -708,7 +708,8 @@ endfunction
 function! s:Copy( source, target )
 "*******************************************************************************
 "* PURPOSE:
-"   Copies a:source to a:target. If a:target exists, it is overwritten. 
+"   Copies a:source to a:target. If a:target exists, it is overwritten (unless
+"   is is readonly, then the copy command will fail). 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None. 
 "* EFFECTS / POSTCONDITIONS:
@@ -782,7 +783,7 @@ function! s:Restore( source, target, confirmationMessage )
     endtry
     return 1
 endfunction
-function! writebackupVersionControl#RestoreFromPred( originalFilespec )
+function! writebackupVersionControl#RestoreFromPred( originalFilespec, isForced )
 "*******************************************************************************
 "* PURPOSE:
 "   Restores the passed original file with its latest backup. 
@@ -794,6 +795,8 @@ function! writebackupVersionControl#RestoreFromPred( originalFilespec )
 "* INPUTS:
 "   a:originalFilespec	Backup or original file (but backup file results in
 "			error message). 
+"   a:isForced	Flag whether restore should proceed without confirmation and
+"		overwrite readonly original file. 
 "* RETURN VALUES: 
 "   None. 
 "*******************************************************************************
@@ -813,7 +816,7 @@ function! writebackupVersionControl#RestoreFromPred( originalFilespec )
     endtry
 endfunction
 
-function! writebackupVersionControl#RestoreThisBackup( filespec )
+function! writebackupVersionControl#RestoreThisBackup( filespec, isForced )
 "*******************************************************************************
 "* PURPOSE:
 "   Restores the passed file as the original file. 
@@ -824,6 +827,8 @@ function! writebackupVersionControl#RestoreThisBackup( filespec )
 "   Prints error message. 
 "* INPUTS:
 "   a:filespec	Backup file. 
+"   a:isForced	Flag whether restore should proceed without confirmation and
+"		overwrite readonly original file. 
 "* RETURN VALUES: 
 "   None. 
 "*******************************************************************************
@@ -851,7 +856,7 @@ function! writebackupVersionControl#RestoreThisBackup( filespec )
     endtry
 endfunction
 
-function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec )
+function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec, isForced )
 "*******************************************************************************
 "* PURPOSE:
 "   Instead of backing up the current buffer, back up the saved version of the
@@ -863,6 +868,8 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
 "   Prints error message. 
 "* INPUTS:
 "   a:originalFilespec	Original file.
+"   a:isForced	Flag whether running out of backup versions is not allowed, and
+"		we'd rather overwrite the last backup. 
 "* RETURN VALUES: 
 "   Throws 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
 "   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
@@ -883,28 +890,31 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
     endtry
 endfunction
 
-function! writebackupVersionControl#DeleteBackup( backupFilespec )
+function! writebackupVersionControl#DeleteBackup( backupFilespec, isForced )
 "*******************************************************************************
 "* PURPOSE:
-"   Delete the passed backup file, if it is writable. 
+"   Delete the passed backup file, if it is writable (or forced). 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   The file a:backupFilespec exists. 
 "* EFFECTS / POSTCONDITIONS:
 "   Removes the passed backup file from the file system. 
 "* INPUTS:
 "   a:backupFilespec	Backup file. 
+"   a:isForced	Flag whether readonly backups should also be deleted. 
 "* RETURN VALUES: 
 "   None. 
 "   Throws 'WriteBackupVersionControl: Cannot delete original file!'
 "   Throws 'WriteBackupVersionControl: Cannot delete backup version ...
-"	    'readonly' option is set'
+"	    'readonly' option is set' (unless a:isForced). 
 "   Throws 'WriteBackupVersionControl: Failed to delete backup version ...'
 "*******************************************************************************
     if writebackupVersionControl#IsOriginalFile(a:backupFilespec)
 	throw 'WriteBackupVersionControl: Cannot delete original file!'
     endif
 
-    if filereadable(a:backupFilespec) && ! filewritable(a:backupFilespec)
+    " The delete() function also deletes readonly files without complaining, so
+    " we need to explicitly check for readonly files to avoid that. 
+    if ! a:isForced && filereadable(a:backupFilespec) && ! filewritable(a:backupFilespec)
 	throw printf("WriteBackupVersionControl: Cannot delete backup version '%s': 'readonly' option is set", s:GetVersion(a:backupFilespec))
     endif
 
@@ -912,7 +922,22 @@ function! writebackupVersionControl#DeleteBackup( backupFilespec )
 	throw printf("WriteBackupVersionControl: Failed to delete backup version '%s'", s:GetVersion(a:backupFilespec))
     endif
 endfunction
-function! writebackupVersionControl#DeleteBackupLastBackup( filespec )
+function! writebackupVersionControl#DeleteBackupLastBackup( filespec, isForced )
+"*******************************************************************************
+"* PURPOSE:
+"   Delete the latest backup version. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   None. 
+"* EFFECTS / POSTCONDITIONS:
+"   Removes the last backup file vrom the file system. 
+"   Prints (error) message. 
+"* INPUTS:
+"   a:filespec	Backup or original file.
+"   a:isForced	Flag whether delete without confirmation and whether readonly
+"		backups should also be deleted. 
+"* RETURN VALUES: 
+"   None. 
+"*******************************************************************************
     try
 	let l:backupFiles = s:GetAllBackupsForFile(a:filespec)
 	if len(l:backupFiles) == 0
@@ -927,7 +952,7 @@ function! writebackupVersionControl#DeleteBackupLastBackup( filespec )
 	    return
 	endif
 
-	call writebackupVersionControl#DeleteBackup(l:lastBackupFile)
+	call writebackupVersionControl#DeleteBackup(l:lastBackupFile, 0)
 
 	echomsg printf("Deleted backup '%s'; %s", 
 	\   s:GetVersion(l:lastBackupFile),
