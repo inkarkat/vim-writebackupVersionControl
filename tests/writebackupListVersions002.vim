@@ -5,7 +5,7 @@
 " reported. 
 
 cd $TEMP/WriteBackupTest
-silent ! touch --date="+45 seconds" important.txt.20080101b
+call vimtest#System('touch --date="+45 seconds" important.txt.20080101b')
 
 edit important.txt
 echomsg 'Test: Backup from the future'
