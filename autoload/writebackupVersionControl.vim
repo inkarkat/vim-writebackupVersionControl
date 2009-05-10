@@ -1,9 +1,9 @@
 " writebackupVersionControl.vim: Version control functions (diff, restore,
-" history navigation) for writebackup.vim backups with date file extension
-" (format '.YYYYMMDD[a-z]'). 
+" history navigation) for backups made with the writebackup plugin, which have a
+" date file extension in the format '.YYYYMMDD[a-z]'. 
 "
 " DEPENDENCIES:
-"   - External copy command 'cp' (Unix), 'copy' and 'xcopy' (Windows). 
+"   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows). 
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -12,8 +12,12 @@
 "
 " REVISION	DATE		REMARKS 
 "   2.00.005	22-Feb-2009	Added a:isForced argument to all functions that
-"				implement commands which now support forcing via
-"				!. 
+"				implement commands which now support forcing via !. 
+"				writebackupVersionControl#WriteBackupOfSavedOriginal()
+"				now also observes
+"				g:WriteBackup_AvoidIdenticalBackups and avoid
+"				backup of the saved version if it is identical
+"				to the last backup version. 
 "   2.00.004	21-Feb-2009	Factored error reporting out of
 "				s:GetRelativeBackup() to allow the silent usage
 "				by the writebackup plugin. 
@@ -889,15 +893,25 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
 "   Prints error message. 
 "* INPUTS:
 "   a:originalFilespec	Original file.
-"   a:isForced	Flag whether running out of backup versions is not allowed, and
-"		we'd rather overwrite the last backup. 
+"   a:isForced	Flag whether creation of a new backup file is forced, i.e. even
+"		if contents are identical or when no more backup versions (for
+"		this day) are available. 
 "* RETURN VALUES: 
 "   Throws 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
+"   Throws 'WriteBackupVersionControl: This file is already backed up as '<version>''. 
 "   Throws 'WriteBackup:' or any exception resulting from query for backup dir. 
+"   Throws 'WriteBackupVersionControl: Encountered problems...' 
 "*******************************************************************************
     try
-	if ! writebackupVersionControl#IsOriginalFile( a:originalFilespec )
+	if ! writebackupVersionControl#IsOriginalFile(a:originalFilespec)
 	    throw 'WriteBackupVersionControl: You can only backup the latest file version, not a backup file itself!'
+	endif
+
+	if g:WriteBackup_AvoidIdenticalBackups && ! a:isForced
+	    let l:currentBackupVersion = writebackupVersionControl#IsIdenticalWithPredecessor(a:originalFilespec)
+	    if ! empty(l:currentBackupVersion)
+		throw printf("WriteBackupVersionControl: This file is already backed up as '%s'", l:currentBackupVersion)
+	    endif
 	endif
 
 	let l:backupFilename = writebackup#GetBackupFilename(a:originalFilespec, a:isForced)
