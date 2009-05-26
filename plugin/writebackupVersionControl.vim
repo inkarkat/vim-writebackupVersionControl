@@ -1,14 +1,14 @@
 " writebackupVersionControl.vim: Version control functions (diff, restore,
-" history navigation) for writebackup.vim backups with date file extension
-" (format '.YYYYMMDD[a-z]'). 
+" history navigation) for backups made with the writebackup plugin, which have a
+" date file extension in the format '.YYYYMMDD[a-z]'.
 "
 " DEPENDENCIES:
 "   - Requires VIM 7.0 or higher. 
 "
-"   - writebackup.vim (vimscript #1828). 
+"   - writebackup plugin (vimscript #1828). 
 "   - writebackupVersionControl.vim autoload script. 
 "
-"   - External compare shell commands 'cmp' or 'diff'. 
+"   - External compare shell commands "cmp", "diff" or equivalent. 
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
@@ -17,6 +17,13 @@
 "
 let s:version = 200
 " REVISION	DATE		REMARKS 
+"   2.00.026	22-Feb-2009	ENH: Added [!] to the following commands to
+"				disable confirmation dialog and override
+"				readonly target files: 
+"				:WriteBackupRestoreFromPred	
+"				:WriteBackupRestoreThisBackup
+"				:WriteBackupOfSavedOriginal	
+"				:WriteBackupDeleteLastBackup	
 "   2.00.025	21-Feb-2009	ENH: Added :WriteBackupDeleteLastBackup command. 
 "   2.00.024	19-Feb-2009	ENH: Allowing to configure compare shell command
 "				via g:WriteBackup_CompareShellCommand. 
@@ -150,16 +157,16 @@ if ! exists('g:WriteBackup_CompareShellCommand')
 endif
 
 "- commands -------------------------------------------------------------------
-command! -bar WriteBackupDiffWithPred		call writebackupVersionControl#DiffWithPred(expand('%'))
-command! -bar WriteBackupListVersions		call writebackupVersionControl#ListVersions(expand('%'))
-command! -bar -bang -count=1 WriteBackupGoPrev	call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, -1 * <count>)
-command! -bar -bang -count=1 WriteBackupGoNext	call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, <count>)
-command! -bar -bang WriteBackupGoOriginal	call writebackupVersionControl#WriteBackupGoOriginal(expand('%'), <bang>0)
-command! -bar WriteBackupIsBackedUp		call writebackupVersionControl#IsBackedUp(expand('%'))
-command! -bar WriteBackupRestoreFromPred	call writebackupVersionControl#RestoreFromPred(expand('%'))
-command! -bar WriteBackupRestoreThisBackup	call writebackupVersionControl#RestoreThisBackup(expand('%'))
-command! -bar WriteBackupOfSavedOriginal	call writebackupVersionControl#WriteBackupOfSavedOriginal(expand('%'))
-command! -bar WriteBackupDeleteLastBackup	call writebackupVersionControl#DeleteBackupLastBackup(expand('%'))
+command! -bar WriteBackupDiffWithPred		    call writebackupVersionControl#DiffWithPred(expand('%'))
+command! -bar WriteBackupListVersions		    call writebackupVersionControl#ListVersions(expand('%'))
+command! -bar -bang -count=1 WriteBackupGoPrev	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, -1 * <count>)
+command! -bar -bang -count=1 WriteBackupGoNext	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, <count>)
+command! -bar -bang WriteBackupGoOriginal	    call writebackupVersionControl#WriteBackupGoOriginal(expand('%'), <bang>0)
+command! -bar WriteBackupIsBackedUp		    call writebackupVersionControl#IsBackedUp(expand('%'))
+command! -bar -bang WriteBackupRestoreFromPred	    call writebackupVersionControl#RestoreFromPred(expand('%'), <bang>0)
+command! -bar -bang WriteBackupRestoreThisBackup    call writebackupVersionControl#RestoreThisBackup(expand('%'), <bang>0)
+command! -bar -bang WriteBackupOfSavedOriginal	    call writebackupVersionControl#WriteBackupOfSavedOriginal(expand('%'), <bang>0)
+command! -bar -bang WriteBackupDeleteLastBackup	    call writebackupVersionControl#DeleteBackupLastBackup(expand('%'), <bang>0)
 
 unlet s:version
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
