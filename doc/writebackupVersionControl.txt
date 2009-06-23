@@ -152,6 +152,10 @@ IDEAS									    *
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
 
+2.10	27-May-2009
+Replaced simple filespec escaping with built-in fnameescape() function (or
+emulation for Vim 7.0 / 7.1) via escapings.vim wrapper.
+
 2.01	11-May-2009
 Backup versions are now opened read-only (through :WriteBackupGoPrev/Next and
 :WriteBackupDiffWithPred commands) to prevent the user from accidentally
