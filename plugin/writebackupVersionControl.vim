@@ -15,8 +15,10 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
-let s:version = 210
+let s:version = 212
 " REVISION	DATE		REMARKS 
+"   2.12.029	08-Jul-2009	ENH: Added :WriteBackupViewDiffWithPred command
+"				to show the diff output in a scratch buffer. 
 "   2.11.028	24-Jun-2009	ENH: :WriteBackupDiffWithPred now takes an
 "				optional [count] to diff with an earlier
 "				predecessor. 
@@ -161,17 +163,34 @@ if ! exists('g:WriteBackup_CompareShellCommand')
     endif
 endif
 
+" Shell command used to diff two files for the :WriteBackupViewDiffWithPred
+" command. 
+if ! exists('g:WriteBackup_DiffShellCommand')
+    let g:WriteBackup_DiffShellCommand = 'diff'
+endif
+
+" Command-line arguments which are always passed to the diff shell command. 
+if ! exists('g:WriteBackup_DiffCreateAlwaysArguments')
+    let g:WriteBackup_DiffCreateAlwaysArguments = ''
+endif
+" Command-line arguments which are only passed to the diff shell command when no
+" arguments are passed to the :WriteBackupViewDiffWithPred command. 
+if ! exists('g:WriteBackup_DiffCreateDefaultArguments')
+    let g:WriteBackup_DiffCreateDefaultArguments = '-u'
+endif
+
 "- commands -------------------------------------------------------------------
-command! -bar -count=1 WriteBackupDiffWithPred	    call writebackupVersionControl#DiffWithPred(expand('%'), <count>)
-command! -bar WriteBackupListVersions		    call writebackupVersionControl#ListVersions(expand('%'))
-command! -bar -bang -count=1 WriteBackupGoPrev	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, -1 * <count>)
-command! -bar -bang -count=1 WriteBackupGoNext	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, <count>)
-command! -bar -bang WriteBackupGoOriginal	    call writebackupVersionControl#WriteBackupGoOriginal(expand('%'), <bang>0)
-command! -bar WriteBackupIsBackedUp		    call writebackupVersionControl#IsBackedUp(expand('%'))
-command! -bar -bang WriteBackupRestoreFromPred	    call writebackupVersionControl#RestoreFromPred(expand('%'), <bang>0)
-command! -bar -bang WriteBackupRestoreThisBackup    call writebackupVersionControl#RestoreThisBackup(expand('%'), <bang>0)
-command! -bar -bang WriteBackupOfSavedOriginal	    call writebackupVersionControl#WriteBackupOfSavedOriginal(expand('%'), <bang>0)
-command! -bar -bang WriteBackupDeleteLastBackup	    call writebackupVersionControl#DeleteBackupLastBackup(expand('%'), <bang>0)
+command! -bar -count=1 WriteBackupDiffWithPred		    call writebackupVersionControl#DiffWithPred(expand('%'), <count>)
+command! -nargs=? -count=1 WriteBackupViewDiffWithPred	    call writebackupVersionControl#ViewDiffWithPred(expand('%'), <count>, <q-args>)
+command! -bar WriteBackupListVersions			    call writebackupVersionControl#ListVersions(expand('%'))
+command! -bar -bang -count=1 WriteBackupGoPrev	    	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, -1 * <count>)
+command! -bar -bang -count=1 WriteBackupGoNext	    	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, <count>)
+command! -bar -bang WriteBackupGoOriginal	    	    call writebackupVersionControl#WriteBackupGoOriginal(expand('%'), <bang>0)
+command! -bar WriteBackupIsBackedUp		    	    call writebackupVersionControl#IsBackedUp(expand('%'))
+command! -bar -bang WriteBackupRestoreFromPred	    	    call writebackupVersionControl#RestoreFromPred(expand('%'), <bang>0)
+command! -bar -bang WriteBackupRestoreThisBackup    	    call writebackupVersionControl#RestoreThisBackup(expand('%'), <bang>0)
+command! -bar -bang WriteBackupOfSavedOriginal	    	    call writebackupVersionControl#WriteBackupOfSavedOriginal(expand('%'), <bang>0)
+command! -bar -bang WriteBackupDeleteLastBackup	    	    call writebackupVersionControl#DeleteBackupLastBackup(expand('%'), <bang>0)
 
 unlet s:version
 " vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
