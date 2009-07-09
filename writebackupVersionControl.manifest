@@ -1,7 +1,8 @@
+autoload/escapings.vim
 autoload/writebackupVersionControl.vim
 plugin/writebackupVersionControl.vim
 doc/writebackupVersionControl.txt
 
 :cd $HOME/Ablage|1,.-2MkVimball! writebackupVersionControl.vba
-:cd $HOME/Ablage|! "unix && gzip -f9 writebackupVersionControl.vba
+:cd $HOME/Ablage|! "unix && gzip -f9 writebackupVersionControl.vba"
 
