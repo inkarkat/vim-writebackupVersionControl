@@ -561,7 +561,7 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	if exists('b:WriteBackup_DiffSettings')
 	    " We're in a diff scratch buffer; reuse the files that were used
 	    " when creating this diff. 
-	    let l:scratchFilename = fnamemodify(bufname(''), ':t')
+	    let l:scratchFilename = b:WriteBackup_DiffSettings.scratchFilename
 	    let l:rootDirspec = b:WriteBackup_DiffSettings.rootDirspec
 	    let l:newFile = b:WriteBackup_DiffSettings.newFile
 	    if a:count
@@ -626,10 +626,13 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	" Save the files that participate in the diff so that the diff can be
 	" updated from within the diff scratch buffer by re-executing
 	" :WriteBackupViewDiffWithPred. 
+	" Also save the actual scratch buffer name to correctly handle renamings
+	" of the diff scratch buffer via :saveas or :file. 
 	let b:WriteBackup_DiffSettings = {
 	\	'rootDirspec' : l:rootDirspec,
 	\	'oldFile' : l:oldFile,
-	\	'newFile' : l:newFile
+	\	'newFile' : l:newFile,
+	\	'scratchFilename' : fnamemodify(bufname(''), ':t')
 	\}
 
 	redraw
