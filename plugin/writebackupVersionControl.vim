@@ -8,16 +8,21 @@
 "   - writebackup plugin (vimscript #1828). 
 "   - writebackupVersionControl.vim autoload script. 
 "
-"   - External compare shell commands "cmp", "diff" or equivalent. 
+"   - External command "cmp", "diff" or equivalent for comparison. 
+"   - External command "diff" or equivalent for listing of differences. 
 "
 " Copyright: (C) 2007-2009 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
-let s:version = 212
+let s:version = 220
 " REVISION	DATE		REMARKS 
-"   2.12.029	08-Jul-2009	ENH: Added :WriteBackupViewDiffWithPred command
+"   2.20.030	09-Jul-2009	:WriteBackupViewDiffWithPred has a default
+"				count of 0 to be able to detect no given count.
+"				Also removed -bar because passed diff arguments
+"				may include quoted strings. 
+"   2.20.029	08-Jul-2009	ENH: Added :WriteBackupViewDiffWithPred command
 "				to show the diff output in a scratch buffer. 
 "   2.11.028	24-Jun-2009	ENH: :WriteBackupDiffWithPred now takes an
 "				optional [count] to diff with an earlier
@@ -181,7 +186,7 @@ endif
 
 "- commands -------------------------------------------------------------------
 command! -bar -count=1 WriteBackupDiffWithPred		    call writebackupVersionControl#DiffWithPred(expand('%'), <count>)
-command! -nargs=? -count=1 WriteBackupViewDiffWithPred	    call writebackupVersionControl#ViewDiffWithPred(expand('%'), <count>, <q-args>)
+command! -nargs=? -count=0 WriteBackupViewDiffWithPred	    call writebackupVersionControl#ViewDiffWithPred(expand('%'), <count>, <q-args>)
 command! -bar WriteBackupListVersions			    call writebackupVersionControl#ListVersions(expand('%'))
 command! -bar -bang -count=1 WriteBackupGoPrev	    	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, -1 * <count>)
 command! -bar -bang -count=1 WriteBackupGoNext	    	    call writebackupVersionControl#WriteBackupGoBackup(expand('%'), <bang>0, <count>)
