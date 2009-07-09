@@ -13,6 +13,11 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.21.011	10-Jul-2009	The creation / update of the scratch buffer
+"				positions the cursor on the first line. In case
+"				of a simple refresh within the diff scratch
+"				buffer, the former cursor position should be
+"				kept. 
 "   2.20.010	09-Jul-2009	The diff files are now saved in
 "				b:WriteBackup_DiffSettings so that the diff can
 "				be updated from within the diff scratch buffer. 
@@ -558,6 +563,7 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 "   None. 
 "*******************************************************************************
     try
+	let l:save_cursor = []
 	if exists('b:WriteBackup_DiffSettings')
 	    " We're in a diff scratch buffer; reuse the files that were used
 	    " when creating this diff. 
@@ -575,6 +581,10 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	    else
 		" No [count] was given; keep the previously used predecessor. 
 		let l:oldFile = b:WriteBackup_DiffSettings.oldFile
+
+		" Keep the current cursor position on a simple refresh of the
+		" differences. 
+		let l:save_cursor = getpos('.')
 	    endif
 	else
 	    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup(a:filespec, -1 * (a:count ? a:count : 1))
@@ -634,6 +644,13 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	\	'newFile' : l:newFile,
 	\	'scratchFilename' : fnamemodify(bufname(''), ':t')
 	\}
+
+	" The creation / update of the scratch buffer positions the cursor on
+	" the first line. In case of a simple refresh within the diff scratch
+	" buffer, the former cursor position should be kept. 
+	if ! empty(l:save_cursor)
+	    call setpos('.', l:save_cursor)
+	endif
 
 	redraw
 	echo l:diffCmd
