@@ -18,6 +18,11 @@
 "				of a simple refresh within the diff scratch
 "				buffer, the former cursor position should be
 "				kept. 
+"				Now checking for empty
+"				g:WriteBackup_DiffShellCommand and printing
+"				error. 
+"				Using escapings#shellescape() for system() calls
+"				instead of simply enclosing in double quotes. 
 "   2.20.010	09-Jul-2009	The diff files are now saved in
 "				b:WriteBackup_DiffSettings so that the diff can
 "				be updated from within the diff scratch buffer. 
@@ -563,6 +568,10 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 "   None. 
 "*******************************************************************************
     try
+	if empty(g:WriteBackup_DiffShellCommand)
+	    throw 'WriteBackupVersionControl: No diff shell command configured. Unable to show differences to predecessor.'
+	endif
+
 	let l:save_cursor = []
 	if exists('b:WriteBackup_DiffSettings')
 	    " We're in a diff scratch buffer; reuse the files that were used
@@ -821,12 +830,17 @@ function! s:AreIdentical( filespec1, filespec2 )
 
     " Expand filespecs to absolute paths to avoid problems with CWD, especially
     " on Windows systems with UNC paths. 
-    let l:diffCmd = g:WriteBackup_CompareShellCommand . ' "' . fnamemodify(a:filespec1, ':p') . '" "' . fnamemodify(a:filespec2, ':p') . '"'
+    let l:diffCmd = printf('%s %s %s', 
+    \	g:WriteBackup_CompareShellCommand,
+    \	escapings#shellescape(fnamemodify(a:filespec1, ':p')),
+    \	escapings#shellescape(fnamemodify(a:filespec2, ':p'))
+    \)
 
     " Using the system() command even though we're not interested in the command
     " output (which is suppressed via command-line arguments to the compare
     " shell command, anyway). This is because on Windows GVIM, the system() call
     " does not (briefly) open a Windows shell window, but ':silent !{cmd}' does. 
+    " system() also does not unintentionally trigger the 'autowrite' feature. 
     call system( l:diffCmd )
 "****D echo '**** ' . g:WriteBackup_CompareShellCommand . ' return code=' . v:shell_error
 
@@ -930,12 +944,17 @@ function! s:Copy( source, target, isForced )
     if has('win32') || has('win64')
 	" On Windows, 'copy' cannot overwrite a readonly target; only 'xcopy'
 	" can (with the /R option). 
-	let l:copyCmd = (s:IsFileReadonly(a:target) ? 'xcopy /Q /R /Y' : 'copy /Y') . ' "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
+	let l:copyShellCmd = (s:IsFileReadonly(a:target) ? 'xcopy /Q /R /Y' : 'copy /Y')
     elseif has('unix')
-	let l:copyCmd = (s:IsFileReadonly(a:target) ? 'cp -f' : 'cp') . ' -- "' . l:sourceFilespec . '" "' . l:targetFilespec . '"'
+	let l:copyShellCmd = (s:IsFileReadonly(a:target) ? 'cp -f' : 'cp') . ' --'
     else
 	throw 'WriteBackupVersionControl: Unsupported operating system type.'
     endif
+    let l:copyCmd = printf('%s %s %s',
+    \	l:copyShellCmd,
+    \	escapings#shellescape(l:sourceFilespec),
+    \	escapings#shellescape(l:targetFilespec)
+    \)
 
     let l:cmdOutput = system(l:copyCmd)
     if v:shell_error != 0
