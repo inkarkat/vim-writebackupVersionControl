@@ -204,6 +204,11 @@ IDEAS									    *
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
 
+2.21	10-Jul-2009
+- Replaced simple filespec quoting with built-in shellescape() function (or
+  emulation for Vim 7.0 / 7.1) via escapings.vim wrapper. 
+- Keeping cursor position when only refreshing the diff scratch buffer. 
+
 2.20	09-Jul-2009
 ENH: Added :WriteBackupViewDiffWithPred command to show the diff output in a
 scratch buffer. With this, one can get a quick overview of what has changed
