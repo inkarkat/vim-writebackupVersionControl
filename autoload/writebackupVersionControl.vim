@@ -13,6 +13,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.21.012	16-Jul-2009	Added
+"				g:WriteBackup_ScratchBufferCommandModifiers
+"				configuration. 
 "   2.21.011	10-Jul-2009	The creation / update of the scratch buffer
 "				positions the cursor on the first line. In case
 "				of a simple refresh within the diff scratch
@@ -636,7 +639,7 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	\	l:scratchFilename,
 	\	1,
 	\	'silent 1read !' . l:diffCmd,
-	\	'topleft new'
+	\	g:WriteBackup_ScratchBufferCommandModifiers . ' new'
 	\)
 	    return
 	endif
