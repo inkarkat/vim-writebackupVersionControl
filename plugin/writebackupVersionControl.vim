@@ -16,8 +16,13 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
-let s:version = 220
+let s:version = 221
 " REVISION	DATE		REMARKS 
+"   2.21.031	10-Jul-2009	BF: Detection of
+"				g:WriteBackup_CompareShellCommand left variable
+"				unset if no command detected. 
+"				Added detection for
+"				g:WriteBackup_DiffShellCommand. 
 "   2.20.030	09-Jul-2009	:WriteBackupViewDiffWithPred has a default
 "				count of 0 to be able to detect no given count.
 "				Also removed -bar because passed diff arguments
@@ -165,13 +170,19 @@ if ! exists('g:WriteBackup_CompareShellCommand')
     elseif executable('diff')
 	" -q	Report no details of the differences. 
 	let g:WriteBackup_CompareShellCommand = 'diff -q'
+    else
+	let g:WriteBackup_CompareShellCommand = ''
     endif
 endif
 
 " Shell command used to diff two files for the :WriteBackupViewDiffWithPred
 " command. 
 if ! exists('g:WriteBackup_DiffShellCommand')
-    let g:WriteBackup_DiffShellCommand = 'diff'
+    if executable('diff')
+	let g:WriteBackup_DiffShellCommand = 'diff'
+    else
+	let g:WriteBackup_DiffShellCommand = ''
+    endif
 endif
 
 " Command-line arguments which are always passed to the diff shell command. 
