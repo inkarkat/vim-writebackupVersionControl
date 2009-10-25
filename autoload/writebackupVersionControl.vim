@@ -13,9 +13,15 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
-"   2.21.012	16-Jul-2009	Added
+"   2.21.013	16-Jul-2009	Added
 "				g:WriteBackup_ScratchBufferCommandModifiers
 "				configuration. 
+"				ENH: Now issuing a warning that there are no
+"				differences and closing the useless diff scratch
+"				buffer if it is empty. 
+"   2.21.012	14-Jul-2009	BF: Forgot {special} in shellescape() call for
+"				writebackupVersionControl#ViewDiffWithPred();
+"				the scratch buffer uses the ! command. 
 "   2.21.011	10-Jul-2009	The creation / update of the scratch buffer
 "				positions the cursor on the first line. In case
 "				of a simple refresh within the diff scratch
@@ -630,8 +636,8 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	" current window's CWD. 
 	let l:diffCmd = printf('%s %s %s %s', g:WriteBackup_DiffShellCommand,
 	\	escape(s:GetDiffOptions(a:diffOptions), '!'),
-	\	escapings#shellescape(l:oldFile),
-	\	escapings#shellescape(l:newFile)
+	\	escapings#shellescape(l:oldFile, 1),
+	\	escapings#shellescape(l:newFile, 1)
 	\)
 
 	if ! ingobuffer#MakeScratchBuffer(
@@ -643,6 +649,26 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	\)
 	    return
 	endif
+	
+	if line('$') == 1 && empty(getline(1))
+	    " The diff scratch buffer is empty: There are no differences, so
+	    " discard the useless window and show a warning instead. 
+	    bdelete
+
+	    redraw
+	    let l:savedMsg = (&l:modified ? 'saved ' : '') 
+	    call s:WarningMsg(printf("No differences reported between %s and backup '%s' of '%s'.",
+	    \	(writebackupVersionControl#IsOriginalFile(a:filespec) ?
+	    \	    'the current ' . l:savedMsg . 'version' :
+	    \	    l:savedMsg . "backup '" . s:GetVersion(a:filespec) . "'"
+	    \	),
+	    \	s:GetVersion(l:predecessor),
+	    \	s:GetOriginalFilespec(a:filespec, 1)
+	    \))
+
+	    return
+	endif
+
 	setlocal filetype=diff
 
 	" Save the files that participate in the diff so that the diff can be
