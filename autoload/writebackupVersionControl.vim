@@ -319,7 +319,7 @@ function! s:GetAllBackupsForFile( filespec )
 "   Sorted list of backup filespecs. 
 "*******************************************************************************
     " glob() filters out file patterns defined in 'wildignore'. If someone wants
-    " to ignore backup files for command-mode file name completion and puts the
+    " to ignore backup files for command mode file name completion and puts the
     " backup file pattern into 'wildignore', this function will break. 
     " Thus, the 'wildignore' option is temporarily reset here. 
     if has('wildignore')
