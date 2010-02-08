@@ -7,7 +7,7 @@ cd $TEMP/WriteBackupTest
 edit important.txt
 WriteBackupViewDiffWithPred --normal
 echomsg 'Test: scratch buffer'
-setlocal buftype? bufhidden? buflisted? swapfile? readonly? modifiable? modified?
+setlocal buftype? bufhidden? buflisted? swapfile? readonly? modifiable? modified? filetype?
 call vimtap#file#IsFilespec('WriteBackupTest/important.txt.diff [Scratch]', 'scratch buffer')
 call vimtap#file#IsNoFile('scratch buffer')
 call vimtest#SaveOut()
