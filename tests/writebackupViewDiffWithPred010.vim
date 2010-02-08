@@ -15,5 +15,9 @@ echomsg 'Test: No backups'
 WriteBackupViewDiffWithPred
 call vimtap#file#IsFilespec('not important.txt', 'no backups')
 
+let g:WriteBackup_DiffShellCommand = ''
+echomsg 'Test: Unconfigured diff command'
+WriteBackupViewDiffWithPred
+
 call vimtest#Quit() 
 
