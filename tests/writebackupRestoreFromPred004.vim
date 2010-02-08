@@ -10,8 +10,7 @@ call vimtap#Plan(6)
 cd $TEMP/WriteBackupTest
 
 edit important.txt
-call vimtest#RequestInput('Yes')
-2WriteBackupRestoreFromPred
+2WriteBackupRestoreFromPred!
 call vimtap#file#IsFilespec('important.txt', '2RestoreFromPred')
 call vimtap#file#IsFile('2RestoreFromPred')
 call vimtap#Is(getline(1), 'third revision', '2RestoreFromPred 2nd predecessor''s contents')
