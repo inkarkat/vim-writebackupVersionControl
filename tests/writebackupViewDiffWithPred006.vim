@@ -1,7 +1,7 @@
 " Test view diff non-existing diff command. 
 
 call vimtest#StartTap()
-call vimtap#Plan(5)
+call vimtap#Plan(6)
 
 let g:WriteBackup_DiffShellCommand = 'doesnotexist'
 cd $TEMP/WriteBackupTest
@@ -11,6 +11,7 @@ call vimtap#file#IsFilespec('WriteBackupTest/important.txt.diff [Scratch]', 'scr
 call vimtap#file#IsNoFile('scratch buffer')
 echomsg 'Test: diff output'
 echomsg getline(1)
+call vimtap#Isnt('diff', &l:filetype, 'No diff filetype on error diff scratch buffer')
 
 wincmd w
 call vimtap#file#IsFilespec('important.txt', 'still at original')
