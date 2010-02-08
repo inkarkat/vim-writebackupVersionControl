@@ -1,0 +1,4 @@
++doesnotexist -u ['"]important\.txt\.20080101b['"] ['"]important\.txt['"]+
+
+Test: diff output
++\%('doesnotexist' is not recognized as an internal or external command.*\|.*doesnotexist: command not found\)+
