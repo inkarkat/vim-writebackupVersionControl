@@ -1,18 +1,16 @@
 " Test failed restore from predecessor. 
 
+source helpers/file.vim
+
 call vimtest#StartTap()
 call vimtap#Plan(3)
 
 cd $TEMP/WriteBackupTest
 edit important.txt
 
-if has('win32') || has('win64')
-    silent ! attrib +R important.txt
-else
-    silent ! chmod -w important.txt
-endif
+call MakeReadonly('important.txt')
 
-echomsg "User: PLEASE PRESS 'Y'"
+call vimtest#RequestInput('Yes')
 WriteBackupRestoreFromPred
 call vimtap#file#IsFilespec('important.txt', 'RestoreFromPred')
 call vimtap#file#IsFile('RestoreFromPred')
