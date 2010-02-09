@@ -13,6 +13,12 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.24.015	09-Feb-2010	:WriteBackupViewDiffWithPred not just checks
+"				for empty scratch buffer, but also considers the
+"				diff command exit code. 
+"				BUG: WriteBackupViewDiffWithPred didn't always
+"				go back to the original window when no
+"				differences, but fell back to the next one. 
 "   2.23.014	26-Oct-2009	ENH: :WriteBackupRestoreFromPred now takes an
 "				optional [count] to restore an earlier
 "				predecessor. 
@@ -562,6 +568,17 @@ function! s:GetDiffOptions( diffOptions )
     \]
     return join( filter(l:diffOptions, '! empty(v:val)'), ' ')
 endfunction
+function! s:NoDifferencesMessage( filespec, predecessor )
+    let l:savedMsg = (&l:modified ? 'saved ' : '') 
+    return printf("No differences reported between %s and backup '%s' of '%s'.",
+    \	(writebackupVersionControl#IsOriginalFile(a:filespec) ?
+    \	    'the current ' . l:savedMsg . 'version' :
+    \	    l:savedMsg . "backup '" . s:GetVersion(a:filespec) . "'"
+    \	),
+    \	s:GetVersion(a:predecessor),
+    \	s:GetOriginalFilespec(a:filespec, 1)
+    \)
+endfunction
 function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptions )
 "*******************************************************************************
 "* PURPOSE:
@@ -654,27 +671,57 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	\)
 	    return
 	endif
-	
-	if line('$') == 1 && empty(getline(1))
+
+	if v:shell_error < 0 || v:shell_error > 1
+	    let l:save_cursor = [] " Do not restore cursor position. 
+
+	    " The diff command exited with an error. The error message is
+	    " probably shown in the scratch buffer, so don't close it. Alert
+	    " the user with an extra error message. 
+	    redraw
+	    " Always show the actual diff command; this may be useful for
+	    " troubleshooting. 
+	    echo l:diffCmd
+	    call s:ErrorMsg('Diff command failed; shell returned ' . v:shell_error)
+
+	    " By continuing with the execution, the user is able to re-try
+	    " the diff from the diff scratch buffer via the
+	    " :WriteBackupViewDiffWithPred command or "du" mapping, as the diff
+	    " settings will be saved. 
+	elseif line('$') == 1 && empty(getline(1))
+	    let l:save_cursor = [] " Do not restore cursor position. 
+
 	    " The diff scratch buffer is empty: There are no differences, so
-	    " discard the useless window and show a warning instead. 
+	    " discard the useless window, go back to the original window and
+	    " show a warning instead. 
 	    bdelete
+	    wincmd p
 
 	    redraw
-	    let l:savedMsg = (&l:modified ? 'saved ' : '') 
-	    call s:WarningMsg(printf("No differences reported between %s and backup '%s' of '%s'.",
-	    \	(writebackupVersionControl#IsOriginalFile(a:filespec) ?
-	    \	    'the current ' . l:savedMsg . 'version' :
-	    \	    l:savedMsg . "backup '" . s:GetVersion(a:filespec) . "'"
-	    \	),
-	    \	s:GetVersion(l:predecessor),
-	    \	s:GetOriginalFilespec(a:filespec, 1)
-	    \))
-
+	    " Only show the actual diff command if it doesn't cause the
+	    " Hit-Enter prompt. 
+	    if &cmdheight > 1 | echo l:diffCmd | endif
+	    call s:WarningMsg(s:NoDifferencesMessage(a:filespec, l:predecessor))
 	    return
+	elseif v:shell_error == 0
+	    " The diff buffer is not empty, but the diff command reported no
+	    " differences. (Probably, a unusual diff format like
+	    " --side-by-side has been used.) Keep the buffer, and print a
+	    "  simple message. 
+	    setlocal filetype=diff
+
+	    redraw
+	    " Only show the actual diff command if it doesn't cause the
+	    " Hit-Enter prompt. 
+	    if &cmdheight > 1 | echo l:diffCmd | endif
+	    echomsg s:NoDifferencesMessage(a:filespec, l:predecessor)
+	else
+	    setlocal filetype=diff
+
+	    redraw
+	    echo l:diffCmd
 	endif
 
-	setlocal filetype=diff
 
 	" Save the files that participate in the diff so that the diff can be
 	" updated from within the diff scratch buffer by re-executing
@@ -694,9 +741,6 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	if ! empty(l:save_cursor)
 	    call setpos('.', l:save_cursor)
 	endif
-
-	redraw
-	echo l:diffCmd
     catch /^Vim\%((\a\+)\)\=:E/
 	call s:VimExceptionMsg(v:exception)
     catch /^WriteBackup\%(VersionControl\)\?:/
