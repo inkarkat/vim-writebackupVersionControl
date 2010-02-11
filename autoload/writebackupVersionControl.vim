@@ -18,6 +18,9 @@
 "				issue with a:filespec showing scratch buffer
 "				name in place of the original file name. Now
 "				using l:oldFile and l:newFile instead. 
+"				ENH: Define a local 'du' mapping to quickly
+"				update the diff (of the same version and with
+"				the same options as this time). 
 "   2.24.015	09-Feb-2010	:WriteBackupViewDiffWithPred not just checks
 "				for empty scratch buffer, but also considers the
 "				diff command exit code. 
@@ -732,12 +735,21 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	" Also save the actual scratch buffer name to correctly handle renamings
 	" of the diff scratch buffer via :saveas or :file. 
 	let b:WriteBackup_DiffSettings = {
-	\	'rootDirspec' : l:rootDirspec,
-	\	'oldFile' : l:oldFile,
-	\	'newFile' : l:newFile,
-	\	'scratchFilename' : fnamemodify(bufname(''), ':t')
+	\   'rootDirspec': l:rootDirspec,
+	\   'oldFile': l:oldFile,
+	\   'newFile': l:newFile,
+	\   'scratchFilename': fnamemodify(bufname(''), ':t'),
+	\   'count': a:count,
+	\   'diffOptions': a:diffOptions
 	\}
 
+	" Define a local 'du' mapping to quickly update the diff (of the same
+	" version and with the same options as this time). 
+	" Note: Instead of escaping a:diffOptions for the mapping, we simply
+	" store them in the b:WriteBackup_DiffSettings and reference that
+	" variable in the mapping. 
+	nnoremap <silent> <buffer> du :<C-u>call writebackupVersionControl#ViewDiffWithPred('', b:WriteBackup_DiffSettings.count, b:WriteBackup_DiffSettings.diffOptions)<CR>
+	
 	" The creation / update of the scratch buffer positions the cursor on
 	" the first line. In case of a simple refresh within the diff scratch
 	" buffer, the former cursor position should be kept. 
