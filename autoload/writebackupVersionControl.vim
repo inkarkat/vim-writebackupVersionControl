@@ -7,12 +7,17 @@
 "   - ingobuffer.vim autoload script. 
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows). 
 "
-" Copyright: (C) 2007-2009 by Ingo Karkat
+" Copyright: (C) 2007-2010 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.24.016	12-Feb-2010	BUG: :WriteBackupViewDiffWithPred can cause
+"				E121: Undefined variable: l:predecessor. Similar
+"				issue with a:filespec showing scratch buffer
+"				name in place of the original file name. Now
+"				using l:oldFile and l:newFile instead. 
 "   2.24.015	09-Feb-2010	:WriteBackupViewDiffWithPred not just checks
 "				for empty scratch buffer, but also considers the
 "				diff command exit code. 
@@ -689,8 +694,6 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	    " :WriteBackupViewDiffWithPred command or "du" mapping, as the diff
 	    " settings will be saved. 
 	elseif line('$') == 1 && empty(getline(1))
-	    let l:save_cursor = [] " Do not restore cursor position. 
-
 	    " The diff scratch buffer is empty: There are no differences, so
 	    " discard the useless window, go back to the original window and
 	    " show a warning instead. 
@@ -701,20 +704,20 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	    " Only show the actual diff command if it doesn't cause the
 	    " Hit-Enter prompt. 
 	    if &cmdheight > 1 | echo l:diffCmd | endif
-	    call s:WarningMsg(s:NoDifferencesMessage(a:filespec, l:predecessor))
+	    call s:WarningMsg(s:NoDifferencesMessage(l:newFile, l:oldFile))
 	    return
 	elseif v:shell_error == 0
 	    " The diff buffer is not empty, but the diff command reported no
 	    " differences. (Probably, a unusual diff format like
 	    " --side-by-side has been used.) Keep the buffer, and print a
-	    "  simple message. 
+	    " simple message. 
 	    setlocal filetype=diff
 
 	    redraw
 	    " Only show the actual diff command if it doesn't cause the
 	    " Hit-Enter prompt. 
 	    if &cmdheight > 1 | echo l:diffCmd | endif
-	    echomsg s:NoDifferencesMessage(a:filespec, l:predecessor)
+	    echomsg s:NoDifferencesMessage(l:newFile, l:oldFile)
 	else
 	    setlocal filetype=diff
 
