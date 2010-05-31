@@ -1,0 +1,12 @@
++diff --invalid-argument ['"]important.txt.20080101b['"] ['"]important.txt['"]+
+Diff command failed; shell returned 2
+
++diff -u ['"]important.txt.20080101b['"] ['"]important.txt['"]+
+
+side-by-side
+
+No differences reported between the current version and backup '20100212a' of 'someplace else.txt'.
+
+unified diff
+
+No differences reported between the current version and backup '20100212a' of 'someplace else.txt'.
