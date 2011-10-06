@@ -20,7 +20,8 @@
 "				using l:oldFile and l:newFile instead. 
 "				ENH: Define a local 'du' mapping to quickly
 "				update the diff (of the same version and with
-"				the same options as this time). 
+"				the same options as this time), unless [count]
+"				is given, which sets a different version). 
 "   2.24.015	09-Feb-2010	:WriteBackupViewDiffWithPred not just checks
 "				for empty scratch buffer, but also considers the
 "				diff command exit code. 
@@ -744,11 +745,12 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	\}
 
 	" Define a local 'du' mapping to quickly update the diff (of the same
-	" version and with the same options as this time). 
+	" version and with the same options as this time, unless [count] is
+	" given, which sets a different version). 
 	" Note: Instead of escaping a:diffOptions for the mapping, we simply
 	" store them in the b:WriteBackup_DiffSettings and reference that
 	" variable in the mapping. 
-	nnoremap <silent> <buffer> du :<C-u>call writebackupVersionControl#ViewDiffWithPred('', b:WriteBackup_DiffSettings.count, b:WriteBackup_DiffSettings.diffOptions)<CR>
+	nnoremap <silent> <buffer> du :<C-u>call writebackupVersionControl#ViewDiffWithPred('', (v:count ? v:count : b:WriteBackup_DiffSettings.count), b:WriteBackup_DiffSettings.diffOptions)<CR>
 	
 	" The creation / update of the scratch buffer positions the cursor on
 	" the first line. In case of a simple refresh within the diff scratch
