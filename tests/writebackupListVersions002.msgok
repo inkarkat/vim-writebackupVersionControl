@@ -1,0 +1,7 @@
+Test: Backup from the future
+/These backups exist for file 'important.txt': \n\?/
+19990815a
+20061201a
+20061231a
+20080101ab
+/The last backup has a modification date 00:00:\d\d in the future?!/
