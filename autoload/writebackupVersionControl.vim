@@ -5,14 +5,17 @@
 " DEPENDENCIES:
 "   - escapings.vim autoload script. 
 "   - ingobuffer.vim autoload script. 
+"   - ingodate.vim autoload script. 
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows). 
 "
-" Copyright: (C) 2007-2010 by Ingo Karkat
+" Copyright: (C) 2007-2011 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.25.017	07-Oct-2011	Use ingodate#HumanReltime() for a more human
+"				output of elapsed time since last backup. 
 "   2.24.016	12-Feb-2010	BUG: :WriteBackupViewDiffWithPred can cause
 "				E121: Undefined variable: l:predecessor. Similar
 "				issue with a:filespec showing scratch buffer
@@ -781,29 +784,9 @@ function! s:EchoElapsedTimeSinceVersion( backupFilespec )
 "   None. 
 "*******************************************************************************
     let l:timeElapsed = localtime() - getftime( a:backupFilespec )
-    let l:isBackupInFuture = 0
-    if l:timeElapsed < 0
-	let l:timeElapsed = -1 * l:timeElapsed
-	let l:isBackupInFuture = 1
-    endif
+    let l:isBackupInFuture = (l:timeElapsed < 0)
 
-    let l:secondsElapsed = l:timeElapsed % 60
-    let l:minutesElapsed = (l:timeElapsed / 60) % 60
-    let l:hoursElapsed = (l:timeElapsed / 3600) % 24
-    let l:daysElapsed = (l:timeElapsed / (3600 * 24))
-
-    let l:message = printf(
-    \	(l:isBackupInFuture ?
-    \	    'The last backup has a modification date %s%02d:%02d:%02d in the future?!' :
-    \	    'The last backup was done %s%02d:%02d:%02d ago.'
-    \	),
-    \	(l:daysElapsed > 0 ? l:daysElapsed . ' days, ' : ''),
-    \	l:hoursElapsed,
-    \	l:minutesElapsed,
-    \	l:secondsElapsed
-    \)
-
-    echomsg l:message
+    echomsg 'The last backup was done ' . ingodate#HumanReltime(l:timeElapsed) . (l:isBackupInFuture ? '?!' : '.')
 endfunction
 function! s:GetBackupDir( originalFilespec )
 "*******************************************************************************
