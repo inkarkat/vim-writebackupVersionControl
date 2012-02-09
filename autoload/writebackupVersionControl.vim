@@ -8,12 +8,20 @@
 "   - ingodate.vim autoload script. 
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows). 
 "
-" Copyright: (C) 2007-2011 by Ingo Karkat
+" Copyright: (C) 2007-2012 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   2.30.018	10-Feb-2012	ENH: On Windows, :WriteBackupOfSavedOriginal now
+"				updates the modification date (via a "copy"
+"				trick), and on Unix,
+"				:WriteBackupRestoreThisBackup /
+"				:WriteBackupRestoreFromPred now keep the
+"				backup's modification date. Correct the
+"				(opposite default behaviors) and select the
+"				desired behavior via a flag passed to s:Copy(). 
 "   2.25.017	07-Oct-2011	Use ingodate#HumanReltime() for a more human
 "				output of elapsed time since last backup. 
 "   2.24.016	12-Feb-2010	BUG: :WriteBackupViewDiffWithPred can cause
@@ -996,11 +1004,11 @@ function! writebackupVersionControl#IsBackedUp( originalFilespec )
     endtry
 endfunction
 
-function! s:Copy( source, target, isForced )
+function! s:Copy( source, target, isForced, isKeepModificationDate )
 "*******************************************************************************
 "* PURPOSE:
 "   Copies a:source to a:target. If a:target exists, it is overwritten (unless
-"   is is readonly, then the copy command will fail, unless a:isForced). 
+"   it is readonly, then the copy command will fail, unless a:isForced). 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None. 
 "* EFFECTS / POSTCONDITIONS:
@@ -1009,6 +1017,9 @@ function! s:Copy( source, target, isForced )
 "   a:source filespec
 "   a:target filespec
 "   a:isForced	Flag whether readonly targets should be overwritten. 
+"   a:isKeepModificationDate	Flag whether the a:target should keep the
+"				modification date from a:source (or use the
+"				current date). 
 "* RETURN VALUES: 
 "   None. 
 "   Throws 'WriteBackupVersionControl: Unsupported operating system type.'
@@ -1020,16 +1031,33 @@ function! s:Copy( source, target, isForced )
     let l:targetFilespec = fnamemodify( a:target, ':p' )
 
     if has('win32') || has('win64')
-	" On Windows, 'copy' cannot overwrite a readonly target; only 'xcopy'
+	" On Windows, "copy" cannot overwrite a readonly target; only "xcopy"
 	" can (with the /R option). 
-	let l:copyShellCmd = (s:IsFileReadonly(a:target) ? 'xcopy /Q /R /Y' : 'copy /Y')
+	"
+	" Both "copy" and "xcopy" keep the original modification date. 
+	" We can change that with a trick: Appending the null file to it in
+	" binary mode updates the modification date, and similarly "copy /B /Y
+	" file +,," emulates the "touch" command. 
+	if a:isKeepModificationDate
+	    let l:copyShellCmd = (s:IsFileReadonly(a:target) ? 'xcopy /Q /R /Y %s %s' : 'copy /Y %s %s')
+	else
+	    let l:copyShellCmd = (s:IsFileReadonly(a:target) ?
+	    \   'xcopy /Q /R /Y %s %s && copy /B /Y ' . escapings#shellescape(l:targetFilespec) . ' +,,' :
+	    \   'copy /B /Y %s +NUL %s'
+	    \)
+	endif
     elseif has('unix')
-	let l:copyShellCmd = (s:IsFileReadonly(a:target) ? 'cp -f' : 'cp') . ' --'
+	" "cp" needs to be instructed to keep the source's modification date via
+	" an option. 
+	let l:preserveArg = (a:isKeepModificationDate ? ' --preserve=timestamps' : '')
+	let l:copyShellCmd = (s:IsFileReadonly(a:target) ?
+	\   'cp -f' . l:preserveArg . ' -- %s %s' :
+	\   'cp'    . l:preserveArg . ' -- %s %s'
+	\)
     else
 	throw 'WriteBackupVersionControl: Unsupported operating system type.'
     endif
-    let l:copyCmd = printf('%s %s %s',
-    \	l:copyShellCmd,
+    let l:copyCmd = printf(l:copyShellCmd,
     \	escapings#shellescape(l:sourceFilespec),
     \	escapings#shellescape(l:targetFilespec)
     \)
@@ -1088,7 +1116,7 @@ function! s:Restore( source, target, isForced, confirmationMessage )
     " Thus, we invoke an external command to create a perfect copy.
     " Unfortunately, this introduces platform-specific code. 
     try
-	call s:Copy(a:source, a:target, a:isForced)
+	call s:Copy(a:source, a:target, a:isForced, 1)
     catch
 	throw 'WriteBackupVersionControl: Failed to restore file: ' . v:exception
     endtry
@@ -1201,7 +1229,7 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
 	endif
 
 	let l:backupFilename = writebackup#GetBackupFilename(a:originalFilespec, a:isForced)
-	call s:Copy(a:originalFilespec, l:backupFilename, a:isForced)
+	call s:Copy(a:originalFilespec, l:backupFilename, a:isForced, 0)
 	echomsg '"' . l:backupFilename . '" written'
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg(v:exception)
