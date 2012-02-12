@@ -212,6 +212,15 @@ IDEAS									    *
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
 
+2.30	10-Feb-2012
+ENH: On Windows, :WriteBackupOfSavedOriginal now updates the modification date
+(via a "copy" trick), and on Unix, :WriteBackupRestoreThisBackup /
+:WriteBackupRestoreFromPred now keep the backup's modification date. 
+
+2.25	07-Oct-2011
+Use ingodate#HumanReltime() for a more human output of elapsed time since last
+backup. 
+
 2.24	12-Feb-2010
 - ENH: Define a local 'du' mapping to quickly update the diff (of the same
   version and with the same options as this time), unless [count] is given,
@@ -316,7 +325,7 @@ Added documentation. First release.
 Started development. 
 
 ==============================================================================
-Copyright: (C) 2007-2010 Ingo Karkat
+Copyright: (C) 2007-2012 Ingo Karkat
 The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
