@@ -152,7 +152,8 @@ To uninstall, use the |:RmVimball| command.
 DEPENDENCIES			      *WriteBackupVersionControl-dependencies*
 
 - Requires Vim 7.0 or higher. 
-- Requires the |writebackup.vim| plugin (vimscript #1828). 
+- Requires the |writebackup.vim| plugin (vimscript #1828), version 2.00 or
+  higher. 
 - External command "cmp" or "diff" (or equivalent) for comparison. 
 - External command "diff" or equivalent for listing of differences. 
 - External commands "cp" (Unix) / "copy" and "xcopy" (Windows) for restore
