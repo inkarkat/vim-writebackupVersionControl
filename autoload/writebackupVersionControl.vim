@@ -14,6 +14,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   3.00.020	14-Feb-2012	Change return value of
+"				writebackupVersionControl#IsIdenticalWithPredecessor()
+"				from predecessor version to full filespec. 
 "   2.30.019	13-Feb-2012	All autoload functions behind the various
 "				commands now also indicate their success via a
 "				boolean / numeric return value, so that
@@ -981,7 +984,7 @@ function! writebackupVersionControl#IsIdenticalWithPredecessor( filespec )
 "* INPUTS:
 "   a:filespec	Backup or original file. 
 "* RETURN VALUES: 
-"   Backup version of the identical predecessor or empty string to indicate that
+"   Filespec of the identical predecessor or empty string to indicate that
 "   either no backup exists, or the predecessor is different. 
 "   Throws 'WriteBackupVersionControl: Encountered problems...' 
 "*******************************************************************************
@@ -992,7 +995,7 @@ function! writebackupVersionControl#IsIdenticalWithPredecessor( filespec )
     endif
 
     if s:AreIdentical(l:predecessor, a:filespec)
-	return writebackupVersionControl#GetVersion(l:predecessor)
+	return l:predecessor
     else
 	return ''
     endif
@@ -1263,8 +1266,9 @@ function! writebackupVersionControl#WriteBackupOfSavedOriginal( originalFilespec
 	endif
 
 	if g:WriteBackup_AvoidIdenticalBackups && ! a:isForced
-	    let l:currentBackupVersion = writebackupVersionControl#IsIdenticalWithPredecessor(a:originalFilespec)
-	    if ! empty(l:currentBackupVersion)
+	    let l:currentBackupFilespec = writebackupVersionControl#IsIdenticalWithPredecessor(a:originalFilespec)
+	    if ! empty(l:currentBackupFilespec)
+		let l:currentBackupVersion = writebackupVersionControl#GetVersion(l:currentBackupFilespec)
 		throw printf("WriteBackupVersionControl: This file is already backed up as '%s'", l:currentBackupVersion)
 	    endif
 	endif
