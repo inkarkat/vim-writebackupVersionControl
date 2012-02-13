@@ -1,8 +1,6 @@
 " Test dependency check of writebackupVersionControl.vim. 
 
-if g:runVimTests =~# '\<user\>'
-    call vimtest#Skip('writebackupVersionControl plugin already loaded')
-endif
+call vimtest#SkipAndQuitIf(exists('g:loaded_writebackupVersionControl'), 'writebackupVersionControl plugin already loaded')
 
 let g:loaded_writebackup = 300
 echomsg 'Test: Dependency check wants same major version'
