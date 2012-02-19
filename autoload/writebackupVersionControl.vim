@@ -488,22 +488,25 @@ function! s:GetDaysBackup( filespec, daysPast )
 "   - Error message if no such version exists. 
 "   Either the first or the second list element is an empty string. 
 "*******************************************************************************
-    let l:currentDate = (writebackupVersionControl#IsOriginalFile(a:filespec) ? strftime('%Y%m%d') : writebackupVersionControl#GetVersion(a:filespec)[0:-2])
-
-    if has('win32') || has('win64')
-	" Windows does not support the Epoch (strftime('%s')), so we can only do
-	" some rudimentary date arithmethic. 
+    if writebackupVersionControl#IsOriginalFile(a:filespec)
+	let l:epochTime = localtime()
+	" Do the date arithmethic by subtracting the seconds for a day, and
+	" reconverting back. 
+	let l:predecessorEpochTime = l:epochTime - 86400 * (a:daysPast - 1)
+	let l:predecessorDate = strftime('%Y%m%d', l:predecessorEpochTime)
+    else
+	" We cannot do the date arithmetic via strftime(), because it cannot
+	" convert our date string into the Epoch time. So we can just do some
+	" clumsy calculations on our own. 
+	let l:currentDate = writebackupVersionControl#GetVersion(a:filespec)[0:-2]
 	let l:currentDay = str2nr(l:currentDate[-2:])
 	let l:predecessorDay = l:currentDay - a:daysPast + 1
 	if l:predecessorDay < 1
-	    return ['', 'Bad platform; cannot go beyond first day of month']
+	    return ['', 'Sorry, cannot go beyond first day of month for backups.']
 	endif
 	let l:predecessorDate = l:currentDate[0:5] . printf('%02d', l:predecessorDay)
-    else
-	" Do the date arithmethic by converting to seconds since Epoch,
-	" subtracting the seconds for a day, and reconverting back. 
-	let l:predecessorDate = strftime('%Y%m%d', (strftime('%s', l:currentDate) - 86400 * (a:daysPast - 1)))
     endif
+"****D echomsg '****' l:predecessorDate
 
     let l:backupFiles = writebackupVersionControl#GetAllBackupsForFile(a:filespec)
     for l:backupFile in l:backupFiles
