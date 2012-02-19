@@ -1,0 +1,11 @@
+Test: No predecessor
+This is the earliest backup: important.txt.19990815a
+
+Test: DiffWithPred fourth & original
+  diff
+  diff
+
+Test: DiffWithPred third & fourth & original
+  diff
+  diff
+  diff
