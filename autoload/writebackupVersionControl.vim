@@ -465,7 +465,7 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
     let l:newIndex = min([max([l:currentIndex + a:relativeIndex, 0]), l:lastBackupIndex])
     return [get( l:backupFiles, l:newIndex, '' ), '']
 endfunction
-function! s:GetDaysBackup( filespec, daysPast )
+function! s:GetDaysBackup( filespec, daysIndex )
 "*******************************************************************************
 "* PURPOSE:
 "   Gets the filespec of the day's first backup of the passed filespec,
@@ -481,18 +481,22 @@ function! s:GetDaysBackup( filespec, daysPast )
 "   None. 
 "* INPUTS:
 "   a:filespec	Backup or original file.
-"   a:daysPast	Number of days (including today) that shall be covered. 
+"   a:daysIndex	Number of days (including today) that shall be covered. Must be
+"		negative so that it points to the past. 
 "* RETURN VALUES: 
 "   List of 
 "   - Filespec of the backup version, or empty string if no such version exists.  
 "   - Error message if no such version exists. 
 "   Either the first or the second list element is an empty string. 
 "*******************************************************************************
+    if a:daysIndex >= 0 | throw 'ASSERT: daysIndex must be negative' | endif
+    let l:daysPast = -1 * a:daysIndex - 1
+
     if writebackupVersionControl#IsOriginalFile(a:filespec)
 	let l:epochTime = localtime()
 	" Do the date arithmethic by subtracting the seconds for a day, and
 	" reconverting back. 
-	let l:predecessorEpochTime = l:epochTime - 86400 * (a:daysPast - 1)
+	let l:predecessorEpochTime = l:epochTime - 86400 * l:daysPast
 	let l:predecessorDate = strftime('%Y%m%d', l:predecessorEpochTime)
     else
 	" We cannot do the date arithmetic via strftime(), because it cannot
@@ -500,7 +504,7 @@ function! s:GetDaysBackup( filespec, daysPast )
 	" clumsy calculations on our own. 
 	let l:currentDate = writebackupVersionControl#GetVersion(a:filespec)[0:-2]
 	let l:currentDay = str2nr(l:currentDate[-2:])
-	let l:predecessorDay = l:currentDay - a:daysPast + 1
+	let l:predecessorDay = l:currentDay - l:daysPast
 	if l:predecessorDay < 1
 	    return ['', 'Sorry, cannot go beyond first day of month for backups.']
 	endif
@@ -523,8 +527,8 @@ function! s:GetDaysBackup( filespec, daysPast )
     elseif l:backupFile ==# a:filespec
 	return ['', "This is the day's earliest backup: " . l:backupFile]
     elseif empty(l:backupFile)
-	if a:daysPast > 1
-	    return ['', printf("Couldn't locate a backup from up to %d day%s ago: %s", (a:daysPast - 1), (a:daysPast == 2 ? '' : 's'), a:filespec)]
+	if l:daysPast > 0
+	    return ['', printf("Couldn't locate a backup from up to %d day%s ago: %s", l:daysPast, (l:daysPast == 1 ? '' : 's'), a:filespec)]
 	else
 	    return ['', "Couldn't locate a backup from today: " . a:filespec]
 	endif
@@ -712,7 +716,7 @@ function! writebackupVersionControl#DiffDaysChanges( filespec, count )
 "   1 if successful. 
 "*******************************************************************************
     try
-	let [l:predecessor, l:errorMessage] = s:GetDaysBackup( a:filespec, a:count )
+	let [l:predecessor, l:errorMessage] = s:GetDaysBackup( a:filespec, -1 * a:count )
 	if ! empty(l:errorMessage)
 	    call s:ErrorMsg(l:errorMessage)
 	else
