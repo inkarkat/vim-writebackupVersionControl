@@ -14,6 +14,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS 
+"   3.10.034	20-Feb-2012	ENH: Add :WriteBackupDiffDaysChanges and
+"				:WriteBackupViewDaysChanges. 
 "   3.00.020	14-Feb-2012	Change return value of
 "				writebackupVersionControl#IsIdenticalWithPredecessor()
 "				from predecessor version to full filespec. 
@@ -463,6 +465,70 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
     let l:newIndex = min([max([l:currentIndex + a:relativeIndex, 0]), l:lastBackupIndex])
     return [get( l:backupFiles, l:newIndex, '' ), '']
 endfunction
+function! s:GetDaysBackup( filespec, daysPast )
+"*******************************************************************************
+"* PURPOSE:
+"   Gets the filespec of the day's first backup of the passed filespec,
+"   regardless of whether the passed filespec is the current file (without a
+"   version extension), or a versioned backup. 
+"   If there is no backup at the particular day, the first later backup is
+"   returned. 
+"   If a:filespec is the first / last backup version / original
+"   file, an error is printed and an empty string is returned. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   None. 
+"* EFFECTS / POSTCONDITIONS:
+"   None. 
+"* INPUTS:
+"   a:filespec	Backup or original file.
+"   a:daysPast	Number of days (including today) that shall be covered. 
+"* RETURN VALUES: 
+"   List of 
+"   - Filespec of the backup version, or empty string if no such version exists.  
+"   - Error message if no such version exists. 
+"   Either the first or the second list element is an empty string. 
+"*******************************************************************************
+    let l:currentDate = (writebackupVersionControl#IsOriginalFile(a:filespec) ? strftime('%Y%m%d') : writebackupVersionControl#GetVersion(a:filespec)[0:-2])
+
+    if has('win32') || has('win64')
+	" Windows does not support the Epoch (strftime('%s')), so we can only do
+	" some rudimentary date arithmethic. 
+	let l:currentDay = str2nr(l:currentDate[-2:])
+	let l:predecessorDay = l:currentDay - a:daysPast + 1
+	if l:predecessorDay < 1
+	    return ['', 'Bad platform; cannot go beyond first day of month']
+	endif
+	let l:predecessorDate = l:currentDate[0:5] . printf('%02d', l:predecessorDay)
+    else
+	" Do the date arithmethic by converting to seconds since Epoch,
+	" subtracting the seconds for a day, and reconverting back. 
+	let l:predecessorDate = strftime('%Y%m%d', (strftime('%s', l:currentDate) - 86400 * (a:daysPast - 1)))
+    endif
+
+    let l:backupFiles = writebackupVersionControl#GetAllBackupsForFile(a:filespec)
+    for l:backupFile in l:backupFiles
+	if writebackupVersionControl#GetVersion(l:backupFile)[0:-2] >=# l:predecessorDate
+	    break
+	endif
+	let l:backupFile = ''
+    endfor
+
+    if len(l:backupFiles) == 0
+	return ['', 'No backups exist for this file.']
+    elseif a:filespec ==# l:backupFiles[0]
+	return ['', 'This is the earliest backup: ' . a:filespec]
+    elseif l:backupFile ==# a:filespec
+	return ['', "This is the day's earliest backup: " . l:backupFile]
+    elseif empty(l:backupFile)
+	if a:daysPast > 1
+	    return ['', printf("Couldn't locate a backup from up to %d day%s ago: %s", (a:daysPast - 1), (a:daysPast == 2 ? '' : 's'), a:filespec)]
+	else
+	    return ['', "Couldn't locate a backup from today: " . a:filespec]
+	endif
+    endif
+
+    return [l:backupFile, '']
+endfunction
 
 function! s:EditFile( filespec, isBang, isReadonly )
 "*******************************************************************************
@@ -557,6 +623,39 @@ function! writebackupVersionControl#WriteBackupGoBackup( filespec, isBang, relat
     endtry
 endfunction
 
+function! s:DiffFile( filespec )
+"******************************************************************************
+"* PURPOSE:
+"   Diff the current buffer with passed a:filespec in a split window. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   None. 
+"* EFFECTS / POSTCONDITIONS:
+"   Open a:filespec in split window. 
+"* INPUTS:
+"   a:filespec	Existing file. 
+"* RETURN VALUES: 
+"   None. 
+"******************************************************************************
+    " Close all folds before the diffsplit; this avoids that a previous (open)
+    " fold status at the cursor position is remembered and obscures the actual
+    " differences. 
+    if has('folding') | setlocal foldlevel=0 | endif
+
+    " The :diffsplit command doesn't allow to open the file read-only; using
+    " ':setlocal readonly' afterwards leaves an unnecessary swapfile. Thus, we
+    " use :sview to open the file and use :diffthis on both windows. 
+    diffthis
+
+    let l:splittype = (g:WriteBackup_DiffVertSplit ? 'vertical ' : '') . 'sview'
+    execute l:splittype s:FnameShortenAndEscape(a:filespec)
+    diffthis
+    " Note: We're assuming here that the ':sview a:filespec' cannot fail. If we
+    " were not so sure, we would need to check and undo the :diffthis on the
+    " current window in case of failure here. 
+
+    " Return to original window. 
+    wincmd p
+endfunction
 function! writebackupVersionControl#DiffWithPred( filespec, count )
 "*******************************************************************************
 "* PURPOSE:
@@ -579,29 +678,44 @@ function! writebackupVersionControl#DiffWithPred( filespec, count )
 	if ! empty(l:errorMessage)
 	    call s:ErrorMsg(l:errorMessage)
 	else
-"****D echo '**** predecessor is ' . l:predecessor
-	    " Close all folds before the diffsplit; this avoids that a previous
-	    " (open) fold status at the cursor position is remembered and
-	    " obscures the actual differences. 
-	    if has('folding') | setlocal foldlevel=0 | endif
-
-	    " The :diffsplit command doesn't allow to open the file read-only;
-	    " using ':setlocal readonly' afterwards leaves an unnecessary
-	    " swapfile. Thus, we use :sview to open the file and use :diffthis
-	    " on both windows. 
-	    diffthis
-
-	    let l:splittype = (g:WriteBackup_DiffVertSplit ? 'vertical ' : '') . 'sview'
-	    execute l:splittype s:FnameShortenAndEscape(l:predecessor)
-	    diffthis
-	    " Note: We're assuming here that the ':sview l:predecessor' cannot
-	    " fail, since we've just determined the predecessor via a file glob. 
-	    " If we were not so sure, we would need to check and undo the
-	    " :diffthis on the current window in case of failure here. 
-
-	    " Return to original window. 
-	    wincmd p
-
+	    " Note: l:predecessor does exist, since we've just determined the
+	    " predecessor via a file glob. 
+	    call s:DiffFile(l:predecessor)
+	    return 1
+	endif
+    catch /^Vim\%((\a\+)\)\=:E/
+	call s:VimExceptionMsg(v:exception)
+    catch /^WriteBackup\%(VersionControl\)\?:/
+	call s:ExceptionMsg(v:exception)
+    endtry
+    return 0
+endfunction
+function! writebackupVersionControl#DiffDaysChanges( filespec, count )
+"*******************************************************************************
+"* PURPOSE:
+"   Creates a diff with the first backup made a:count - 1 days ago of the passed
+"   a:filespec. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   None. 
+"* EFFECTS / POSTCONDITIONS:
+"   Opens a diffsplit with the day's first backup, or: 
+"   Prints error message.
+"   Prints Vim error message if the split cannot be created. 
+"* INPUTS:
+"   a:filespec	Backup or original file.
+"   a:count	Number of days to go back. 
+"* RETURN VALUES: 
+"   0 if an error occurred. 
+"   1 if successful. 
+"*******************************************************************************
+    try
+	let [l:predecessor, l:errorMessage] = s:GetDaysBackup( a:filespec, a:count )
+	if ! empty(l:errorMessage)
+	    call s:ErrorMsg(l:errorMessage)
+	else
+	    " Note: l:predecessor does exist, since we've just determined the
+	    " predecessor via a file glob. 
+	    call s:DiffFile(l:predecessor)
 	    return 1
 	endif
     catch /^Vim\%((\a\+)\)\=:E/
