@@ -1,0 +1,11 @@
++diff --normal ['"]important\.txt\.20080101b['"] ['"]important\.txt['"]+
+
+Test: scratch buffer
+  buftype=nowrite
+  bufhidden=wipe
+nobuflisted
+noswapfile
+  readonly
+  modifiable
+nomodified
+  filetype=diff
