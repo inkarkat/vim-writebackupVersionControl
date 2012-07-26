@@ -227,6 +227,9 @@ IDEAS									    *
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
 
+3.10	20-Feb-2012
+ENH: Add :WriteBackupDiffDaysChanges and :WriteBackupViewDaysChanges. 
+
 3.00	16-Feb-2012
 ENH: New writebackup.vim default "redate" for
 g:WriteBackup_AvoidIdenticalBackups that renames an identical backup from an
