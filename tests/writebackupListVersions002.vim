@@ -5,7 +5,11 @@
 " reported. 
 
 cd $TEMP/WriteBackupTest
-call vimtest#System('touch --date="+45 seconds" important.txt.20080101b')
+if has('win32') || has('win64') 
+    call vimtest#System('"call unix --quiet && touch --date="+45 seconds" important.txt.20080101b"')
+else
+    call vimtest#System('touch --date="+45 seconds" important.txt.20080101b')
+endif
 
 edit important.txt
 echomsg 'Test: Backup from the future'
