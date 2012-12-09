@@ -7,7 +7,7 @@ Test: Listing from file's directory
 20061201a
 20061231a
 20080101ab
-/The last backup was done \d\+ days, .* ago\./
+/The last backup was done \d\+ days ago\./
 
 Test: Listing with a different CWD, new recent backup
 
@@ -18,5 +18,5 @@ Test: Listing with a different CWD, new recent backup
 20061231a
 20080101ab
 /20\d\{6}a/
-/The last backup was done 00:00:0\d ago./
+The last backup was done just now.
 
