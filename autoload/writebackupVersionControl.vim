@@ -16,6 +16,7 @@
 " REVISION	DATE		REMARKS 
 "   3.10.034	20-Feb-2012	ENH: Add :WriteBackupDiffDaysChanges and
 "				:WriteBackupViewDaysChanges. 
+"				Expose s:GetRelativeBackup() for use in Funcref. 
 "   3.00.020	14-Feb-2012	Change return value of
 "				writebackupVersionControl#IsIdenticalWithPredecessor()
 "				from predecessor version to full filespec. 
@@ -342,7 +343,7 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( originalFilespec, notOriginal
 	return ''
     endif
 
-    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:originalFilespec, -1 * a:count )
+    let [l:predecessor, l:errorMessage] = writebackupVersionControl#GetRelativeBackup( a:originalFilespec, -1 * a:count )
     if ! empty(l:errorMessage)
 	call s:ErrorMsg(l:errorMessage)
     endif
@@ -423,7 +424,7 @@ function! s:GetIndexOfVersion( backupFiles, currentVersion )
     endwhile
     return -1
 endfunction
-function! s:GetRelativeBackup( filespec, relativeIndex )
+function! writebackupVersionControl#GetRelativeBackup( filespec, relativeIndex )
 "*******************************************************************************
 "* PURPOSE:
 "   Gets the filespec of a predecessor or later version of the passed
@@ -465,7 +466,7 @@ function! s:GetRelativeBackup( filespec, relativeIndex )
     let l:newIndex = min([max([l:currentIndex + a:relativeIndex, 0]), l:lastBackupIndex])
     return [get( l:backupFiles, l:newIndex, '' ), '']
 endfunction
-function! s:GetDaysBackup( filespec, daysIndex )
+function! writebackupVersionControl#GetDaysBackup( filespec, daysIndex )
 "*******************************************************************************
 "* PURPOSE:
 "   Gets the filespec of the day's first backup of the passed filespec,
@@ -617,7 +618,7 @@ function! writebackupVersionControl#WriteBackupGoBackup( filespec, isBang, relat
 "   1 if successful. 
 "*******************************************************************************
     try
-	let [l:backupFilespec, l:errorMessage] = s:GetRelativeBackup(a:filespec, a:relativeIndex)
+	let [l:backupFilespec, l:errorMessage] = writebackupVersionControl#GetRelativeBackup(a:filespec, a:relativeIndex)
 	if empty(l:errorMessage)
 	    return s:EditFile(l:backupFilespec, a:isBang, 1)
 	else
@@ -681,7 +682,7 @@ function! writebackupVersionControl#DiffWithPred( filespec, count )
 "   1 if successful. 
 "*******************************************************************************
     try
-	let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:filespec, -1 * a:count )
+	let [l:predecessor, l:errorMessage] = writebackupVersionControl#GetRelativeBackup( a:filespec, -1 * a:count )
 	if ! empty(l:errorMessage)
 	    call s:ErrorMsg(l:errorMessage)
 	else
@@ -716,7 +717,7 @@ function! writebackupVersionControl#DiffDaysChanges( filespec, count )
 "   1 if successful. 
 "*******************************************************************************
     try
-	let [l:predecessor, l:errorMessage] = s:GetDaysBackup( a:filespec, -1 * a:count )
+	let [l:predecessor, l:errorMessage] = writebackupVersionControl#GetDaysBackup( a:filespec, -1 * a:count )
 	if ! empty(l:errorMessage)
 	    call s:ErrorMsg(l:errorMessage)
 	else
@@ -753,12 +754,12 @@ function! s:NoDifferencesMessage( filespec, predecessor )
     \	writebackupVersionControl#GetOriginalFilespec(a:filespec, 1)
     \)
 endfunction
-function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptions )
+function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetVersionFuncref )
 "*******************************************************************************
 "* PURPOSE:
-"   Shows the output of the diff with the a:count'th predecessor of the passed
-"   a:filespec or of the files associated with the current diff scratch buffer
-"   in a scratch buffer. 
+"   Shows the output of the diff with another version of the passed
+"   a:filespec (as determined by s:GetVersionFuncref) or of the files associated
+"   with the current diff scratch buffer in a scratch buffer. 
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None. 
 "* EFFECTS / POSTCONDITIONS:
@@ -767,8 +768,10 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 "   Prints Vim error message if the split cannot be created. 
 "* INPUTS:
 "   a:filespec	Backup or original file.
-"   a:count	Number of predecessors to go back, 0 if no count was given. 
+"   a:count	Number to go back, 0 if no count was given. 
 "   a:diffOptions   Optional command-line arguments passed to the diff command. 
+"   a:GetVersionFuncref	Funcref to the function that determines the predecessor
+"			filespec; is passed a:filespec and the count. 
 "* RETURN VALUES: 
 "   0 if an error occurred. 
 "   1 if successful. 
@@ -788,7 +791,7 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	    let l:newFile = b:WriteBackup_DiffSettings.newFile
 	    if a:count
 		" Another predecessor version is selected via the given [count]. 
-		let [l:predecessor, l:errorMessage] = s:GetRelativeBackup(l:newFile, -1 * a:count)
+		let [l:predecessor, l:errorMessage] = call(a:GetVersionFuncref, [l:newFile, -1 * a:count])
 		if ! empty(l:errorMessage)
 		    call s:ErrorMsg(l:errorMessage)
 		    return 0
@@ -803,7 +806,7 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 		let l:save_cursor = getpos('.')
 	    endif
 	else
-	    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup(a:filespec, -1 * (a:count ? a:count : 1))
+	    let [l:predecessor, l:errorMessage] = call(a:GetVersionFuncref, [a:filespec, -1 * (a:count ? a:count : 1)])
 	    if ! empty(l:errorMessage)
 		call s:ErrorMsg(l:errorMessage)
 		return 0
@@ -918,7 +921,14 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	" Note: Instead of escaping a:diffOptions for the mapping, we simply
 	" store them in the b:WriteBackup_DiffSettings and reference that
 	" variable in the mapping. 
-	nnoremap <silent> <buffer> du :<C-u>call writebackupVersionControl#ViewDiffWithPred('', (v:count ? v:count : b:WriteBackup_DiffSettings.count), b:WriteBackup_DiffSettings.diffOptions)<CR>
+	execute 
+	\   "nnoremap <silent> <buffer> du " .
+	\   ":<C-u>call writebackupVersionControl#ViewDiff("
+	\   "'', (v:count ? v:count : b:WriteBackup_DiffSettings.count), " .
+	\   "b:WriteBackup_DiffSettings.diffOptions, " .
+	\   string(a:GetVersionFuncref) .
+	\   ")" .
+	\   "<CR>"
 	
 	" The creation / update of the scratch buffer positions the cursor on
 	" the first line. In case of a simple refresh within the diff scratch
@@ -934,6 +944,54 @@ function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptio
 	call s:ExceptionMsg(v:exception)
     endtry
     return 0
+endfunction
+function! writebackupVersionControl#ViewDiffWithPred( filespec, count, diffOptions )
+"*******************************************************************************
+"* PURPOSE:
+"   Shows the output of the diff with the a:count'th predecessor of the passed
+"   a:filespec or of the files associated with the current diff scratch buffer
+"   in a scratch buffer. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   None. 
+"* EFFECTS / POSTCONDITIONS:
+"   Opens / updates the scratch buffer with the diff output, or: 
+"   Prints error message.
+"   Prints Vim error message if the split cannot be created. 
+"* INPUTS:
+"   a:filespec	Backup or original file.
+"   a:count	Number of predecessors to go back, 0 if no count was given. 
+"   a:diffOptions   Optional command-line arguments passed to the diff command. 
+"* RETURN VALUES: 
+"   0 if an error occurred. 
+"   1 if successful. 
+"   2 if no differences were detected. 
+"*******************************************************************************
+    return writebackupVersionControl#ViewDiff(a:filespec, a:count, a:diffOptions,
+    \	function('writebackupVersionControl#GetRelativeBackup'))
+endfunction
+function! writebackupVersionControl#ViewDiffDaysChanges( filespec, count, diffOptions )
+"*******************************************************************************
+"* PURPOSE:
+"   Shows the output of the diff with the first backup made a:count - 1 days ago
+"   of the passed a:filespec or of the files associated with the current diff
+"   scratch buffer in a scratch buffer. 
+"* ASSUMPTIONS / PRECONDITIONS:
+"   None. 
+"* EFFECTS / POSTCONDITIONS:
+"   Opens / updates the scratch buffer with the diff output, or: 
+"   Prints error message.
+"   Prints Vim error message if the split cannot be created. 
+"* INPUTS:
+"   a:filespec	Backup or original file.
+"   a:count	Number of days to go back, 0 if no count was given. 
+"   a:diffOptions   Optional command-line arguments passed to the diff command. 
+"* RETURN VALUES: 
+"   0 if an error occurred. 
+"   1 if successful. 
+"   2 if no differences were detected. 
+"*******************************************************************************
+    return writebackupVersionControl#ViewDiff(a:filespec, a:count, a:diffOptions,
+    \	function('writebackupVersionControl#GetDaysBackup'))
 endfunction
 
 function! s:EchoElapsedTimeSinceVersion( backupFilespec )
@@ -1117,7 +1175,7 @@ function! writebackupVersionControl#IsIdenticalWithPredecessor( filespec )
 "   either no backup exists, or the predecessor is different. 
 "   Throws 'WriteBackupVersionControl: Encountered problems...' 
 "*******************************************************************************
-    let [l:predecessor, l:errorMessage] = s:GetRelativeBackup( a:filespec, -1 )
+    let [l:predecessor, l:errorMessage] = writebackupVersionControl#GetRelativeBackup( a:filespec, -1 )
     if ! empty(l:errorMessage)
 	" No predecessor exists. 
 	return ''
