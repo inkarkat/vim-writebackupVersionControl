@@ -21,6 +21,11 @@
 "				buffer-local variables; e.g. to provide a
 "				filetype-specific "--show-function-list" diff
 "				argument.
+"				ENH: When the current window is in diff mode,
+"				"inherit" the participation in the diff to the
+"				next backup file on :WriteBackupGo* commands, as
+"				the user probably wants to continue comparing
+"				them.
 "   3.10.034	20-Feb-2012	ENH: Add :WriteBackupDiffDaysChanges and
 "				:WriteBackupViewDaysChanges.
 "				Expose s:GetRelativeBackup() for use in Funcref.
@@ -549,6 +554,9 @@ function! s:EditFile( filespec, isBang, isReadonly )
 "*******************************************************************************
 "* PURPOSE:
 "   Edit a:filespec in the current window (via :edit).
+"   When the current window is in diff mode, "inherit" the participation in the
+"   diff to the next backup file, as the user probably wants to continue
+"   comparing them.
 "* ASSUMPTIONS / PRECONDITIONS:
 "   None.
 "* EFFECTS / POSTCONDITIONS:
@@ -563,7 +571,12 @@ function! s:EditFile( filespec, isBang, isReadonly )
 "   1 if successful.
 "*******************************************************************************
     try
+	let l:participatedInDiff = &l:diff
 	execute (a:isReadonly ? 'view' : 'edit') . (a:isBang ? '!' : '') s:FnameShortenAndEscape(a:filespec)
+	if l:participatedInDiff
+	    diffthis
+	endif
+
 	return 1
     catch /^Vim\%((\a\+)\)\=:E/
 	call s:VimExceptionMsg(v:exception)
@@ -627,15 +640,7 @@ function! writebackupVersionControl#WriteBackupGoBackup( filespec, isBang, relat
     try
 	let [l:backupFilespec, l:errorMessage] = writebackupVersionControl#GetRelativeBackup(a:filespec, a:relativeIndex)
 	if empty(l:errorMessage)
-	    let l:participatedInDiff = &l:diff
-	    let l:isSuccess = s:EditFile(l:backupFilespec, a:isBang, 1)
-	    if l:participatedInDiff
-		" When the current window is in diff mode, "inherit" the
-		" participation in the diff to the next backup file, as the user
-		" probably wants to continue comparing them.
-		diffthis
-	    endif
-	    return l:isSuccess
+	    return s:EditFile(l:backupFilespec, a:isBang, 1)
 	else
 	    call s:ErrorMsg(l:errorMessage)
 	    return 0
