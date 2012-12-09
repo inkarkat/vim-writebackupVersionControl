@@ -627,7 +627,15 @@ function! writebackupVersionControl#WriteBackupGoBackup( filespec, isBang, relat
     try
 	let [l:backupFilespec, l:errorMessage] = writebackupVersionControl#GetRelativeBackup(a:filespec, a:relativeIndex)
 	if empty(l:errorMessage)
-	    return s:EditFile(l:backupFilespec, a:isBang, 1)
+	    let l:participatedInDiff = &l:diff
+	    let l:isSuccess = s:EditFile(l:backupFilespec, a:isBang, 1)
+	    if l:participatedInDiff
+		" When the current window is in diff mode, "inherit" the
+		" participation in the diff to the next backup file, as the user
+		" probably wants to continue comparing them.
+		diffthis
+	    endif
+	    return l:isSuccess
 	else
 	    call s:ErrorMsg(l:errorMessage)
 	    return 0
