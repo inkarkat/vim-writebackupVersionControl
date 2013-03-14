@@ -196,11 +196,13 @@ list the differences between two files. Overwrite if "diff" cannot be found
 through $PATH: >
     let g:WriteBackup_DiffShellCommand = '/path/to/mydiff'
 <
+				     *b:WriteBackup_DiffCreateAlwaysArguments*
 				     *g:WriteBackup_DiffCreateAlwaysArguments*
 Command-line arguments for the external diff command can be specified
 separately. Configure any arguments that should always be passed here: >
     let g:WriteBackup_DiffCreateAlwaysArguments = '-t -F "^[_a-zA-Z0-9]+ *("'
 <
+				    *b:WriteBackup_DiffCreateDefaultArguments*
 				    *g:WriteBackup_DiffCreateDefaultArguments*
 If no {diff-arguments} are passed to the |:WriteBackupViewDiffWithPred|
 command, the default diff output format is set to the unified format. You can
@@ -226,6 +228,17 @@ IDEAS									    *
 
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
+
+3.20	14-Dec-2012
+- ENH: Allow to override g:WriteBackup_DiffCreateAlwaysArguments and
+  g:WriteBackup_DiffCreateDefaultArguments with buffer-local variables; e.g.
+  to provide a filetype-specific "--show-function-list" diff argument.
+- ENH: When the current window is in diff mode, "inherit" the participation in
+  the diff to the next backup file on :WriteBackupGo* commands, as the user
+  probably wants to continue comparing them.
+- BUG: On Windows, when file backups exist in different upper-/lowercase
+  versions, the ordering of :WriteBackupListVersions and
+  :WriteBackupGoPrev/Next are broken.
 
 3.10	20-Feb-2012
 ENH: Add :WriteBackupDiffDaysChanges and :WriteBackupViewDaysChanges.
