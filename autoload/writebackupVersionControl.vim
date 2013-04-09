@@ -26,6 +26,16 @@
 "				next backup file on :WriteBackupGo* commands, as
 "				the user probably wants to continue comparing
 "				them.
+"				BUG: On Windows, when file backups exist in
+"				different upper-/lowercase versions, the
+"				ordering of :WriteBackupListVersions and
+"				:WriteBackupGoPrev/Next are broken. Culprit is
+"				the mostly superfluous sort() that was meant to
+"				make things more robust. Use a custom sort
+"				function that only considers the version
+"				extension. Also, keep the case of the version
+"				extension, but always list the versions in
+"				lowercase.
 "   3.10.034	20-Feb-2012	ENH: Add :WriteBackupDiffDaysChanges and
 "				:WriteBackupViewDaysChanges.
 "				Expose s:GetRelativeBackup() for use in Funcref.
@@ -363,6 +373,12 @@ function! s:VerifyIsOriginalFileAndHasPredecessor( originalFilespec, notOriginal
 endfunction
 
 "------------------------------------------------------------------------------
+function! s:SortByBackupVersion( file1, file2 )
+    let l:version1 = writebackupVersionControl#GetVersion(a:file1)
+    let l:version2 = writebackupVersionControl#GetVersion(a:file2)
+
+    return (l:version1 ==? l:version2 ? 0 : l:version1 >? l:version2 ? 1 : -1)
+endfunction
 function! writebackupVersionControl#GetAllBackupsForFile( filespec )
 "*******************************************************************************
 "* PURPOSE:
@@ -396,11 +412,11 @@ function! writebackupVersionControl#GetAllBackupsForFile( filespec )
 	" glob() will do the right thing and return an empty list if
 	" l:adjustedBackupFilespec doesn't yet exist, because no backup has yet been
 	" made.
-	let l:backupFiles = split( glob( l:adjustedBackupFilespec . s:versionFileGlob ), "\n" )
+	let l:backupFiles = split(glob(l:adjustedBackupFilespec . s:versionFileGlob), "\n")
 
 	" Although the glob should already be sorted alphabetically in ascending
 	" order, we'd better be sure and sort the list on our own, too.
-	let l:backupFiles = sort( l:backupFiles )
+	let l:backupFiles = sort(l:backupFiles, 's:SortByBackupVersion')
 "****D echo '**** backupfiles: ' . l:backupFiles
 	return l:backupFiles
     finally
@@ -1094,34 +1110,37 @@ function! writebackupVersionControl#ListVersions( filespec )
 	    return 0
 	endif
 
-	let l:versionMessageHeader = "These backups exist for file '" . l:originalFilespec . "'" . (l:backupDirspec =~# '^\.\?$' ? '' : ' in ' . l:backupDirspec)
-	let l:versionMessageHeader .= ( empty(l:currentVersion) ? ': ' : ' (current version is marked >x<): ')
+	let l:versionMessageHeader = printf("These backups exist for file '%s'%s:%s",
+	\   l:originalFilespec,
+	\   (l:backupDirspec =~# '^\.\?$' ? '' : ' in ' . l:backupDirspec),
+	\   (empty(l:currentVersion) ? '' : ' (current version is marked >x<):')
+	\)
 	echomsg l:versionMessageHeader
 
 	let l:versionMessage = ''
 	let l:backupVersion = ''
 	for l:backupFile in l:backupFiles
 	    let l:previousVersion = l:backupVersion
-	    let l:backupVersion = writebackupVersionControl#GetVersion( l:backupFile )
-	    if strpart( l:backupVersion, 0, len(l:backupVersion) - 1 ) == strpart( l:previousVersion, 0, len(l:previousVersion) - 1 )
-		let l:versionMessageAddition = strpart( l:backupVersion, len(l:backupVersion) - 1 )
-		if l:backupVersion == l:currentVersion
+	    let l:backupVersion = writebackupVersionControl#GetVersion(l:backupFile)
+	    if strpart(l:backupVersion, 0, len(l:backupVersion) - 1) ==? strpart(l:previousVersion, 0, len(l:previousVersion) - 1)
+		let l:versionMessageAddition = tolower(strpart(l:backupVersion, len(l:backupVersion) - 1))
+		if l:backupVersion ==? l:currentVersion
 		    let l:versionMessageAddition = '>' . l:versionMessageAddition . '<'
 		endif
 		let l:versionMessage .= l:versionMessageAddition
 	    else
 		echomsg l:versionMessage
 		let l:versionMessage = l:backupVersion
-		if l:backupVersion == l:currentVersion
-		    let l:versionMessage= strpart( l:versionMessage, 0, len(l:versionMessage) - 1 ). '>' . strpart( l:versionMessage, len(l:versionMessage) - 1 ) . '<'
+		if l:backupVersion ==? l:currentVersion
+		    let l:versionMessage = strpart(l:versionMessage, 0, len(l:versionMessage) - 1). '>' . strpart(l:versionMessage, len(l:versionMessage) - 1) . '<'
 		endif
 	    endif
 	endfor
 	echomsg l:versionMessage
 
-	if empty( l:currentVersion )
+	if empty(l:currentVersion)
 	    let l:lastBackupFile = l:backupFiles[-1]
-	    call s:EchoElapsedTimeSinceVersion( l:lastBackupFile )
+	    call s:EchoElapsedTimeSinceVersion(l:lastBackupFile)
 	endif
 	return 1
     catch /^WriteBackup\%(VersionControl\)\?:/
