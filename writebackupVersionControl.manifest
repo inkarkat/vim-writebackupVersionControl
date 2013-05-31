@@ -2,7 +2,6 @@ autoload/escapings.vim
 autoload/ingobuffer.vim
 autoload/ingodate.vim
 autoload/ingofile.vim
-autoload/ingoplugin.vim
 autoload/writebackupVersionControl.vim
 plugin/writebackupVersionControl.vim
 doc/writebackupVersionControl.txt
