@@ -156,10 +156,10 @@ USAGE					     *WriteBackupVersionControl-usage*
 INSTALLATION			      *WriteBackupVersionControl-installation*
 
 This script is packaged as a |vimball|. If you have the "gunzip" decompressor
-in your PATH, simply edit the *.vba.gz package in Vim; otherwise, decompress
+in your PATH, simply edit the *.vmb.gz package in Vim; otherwise, decompress
 the archive first, e.g. using WinZip. Inside Vim, install by sourcing the
 vimball or via the |:UseVimball| command. >
-    vim writebackupVersionControl.vba.gz
+    vim writebackupVersionControl*.vmb.gz
     :so %
 To uninstall, use the |:RmVimball| command.
 
@@ -167,6 +167,8 @@ DEPENDENCIES			      *WriteBackupVersionControl-dependencies*
 
 - Requires Vim 7.0 or higher.
 - Requires the |writebackup.vim| plugin (vimscript #1828), version 2.00 or
+  higher.
+- Requires the |ingo-library.vim| plugin (vimscript #4433), version 1.005 or
   higher.
 - External command "cmp" or "diff" (or equivalent) for comparison.
 - External command "diff" or equivalent for listing of differences.
@@ -228,6 +230,9 @@ IDEAS									    *
 
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
+
+3.21	RELEASEME
+- Add dependency to ingo-library (vimscript #4433).
 
 3.20	14-Dec-2012
 - ENH: Allow to override g:WriteBackup_DiffCreateAlwaysArguments and
@@ -366,7 +371,7 @@ Added documentation. First release.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2007-2012 Ingo Karkat
+Copyright: (C) 2007-2013 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
