@@ -3,13 +3,13 @@
 " date file extension in the format '.YYYYMMDD[a-z]'.
 "
 " DEPENDENCIES:
+"   - ingo/plugin/setting.vim autoload script
 "   - escapings.vim autoload script
 "   - ingobuffer.vim autoload script
 "   - ingodate.vim autoload script
-"   - ingoplugin.vim autoload script
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows)
 "
-" Copyright: (C) 2007-2012 Ingo Karkat
+" Copyright: (C) 2007-2013 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
@@ -772,8 +772,8 @@ endfunction
 function! s:GetDiffOptions( diffOptions )
     let l:vimDiffOptions = split(&diffopt, ',')
     let l:diffOptions = [
-    \	ingoplugin#GetBufferLocalSetting('WriteBackup_DiffCreateAlwaysArguments'),
-    \	(empty(a:diffOptions) ? ingoplugin#GetBufferLocalSetting('WriteBackup_DiffCreateDefaultArguments') : a:diffOptions),
+    \	ingo#plugin#setting#GetBufferLocal('WriteBackup_DiffCreateAlwaysArguments'),
+    \	(empty(a:diffOptions) ? ingo#plugin#setting#GetBufferLocal('WriteBackup_DiffCreateDefaultArguments') : a:diffOptions),
     \	(index(l:vimDiffOptions, 'icase') == -1 ? '' : '-i'),
     \	(index(l:vimDiffOptions, 'iwhite') == -1 ? '' : '-b')
     \]
