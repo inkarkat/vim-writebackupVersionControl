@@ -1,0 +1,31 @@
+" Test diff todays changes from current. 
+
+source helpers/diff.vim
+
+call vimtest#StartTap()
+call vimtap#Plan(4)
+
+cd $TEMP/WriteBackupTest
+edit not\ important.txt
+echomsg 'Test: No backups'
+WriteBackupDiffDaysChanges
+call vimtap#file#IsFilename('not important.txt', 'no backups')
+
+WriteBackup
+%s/junk/text/g
+WriteBackup
+%s/just/some/g
+WriteBackup
+%s/some/& more/g
+write
+
+WriteBackupDiffDaysChanges
+call vimtap#file#IsFilename('not important.txt', 'stay at current')
+wincmd h
+let s:today = strftime('%Y%m%d')
+call vimtap#file#IsFilename('not important.txt.'.s:today.'a', 'third revision to the left')
+call vimtap#window#IsWindows(['not important.txt.'.s:today.'a', 'not important.txt'], 'DiffDaysChanges first & current')
+echomsg 'Test: DiffDaysChanges'
+call EchoDiff()
+
+call vimtest#Quit() 
