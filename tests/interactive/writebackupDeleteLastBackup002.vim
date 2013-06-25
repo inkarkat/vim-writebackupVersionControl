@@ -1,6 +1,6 @@
-" Test failed deletion of last backup. 
+" Test failed deletion of last backup.
 
-source helpers/file.vim
+source ../helpers/file.vim
 
 if has('gui_running')
     call vimtest#SkipMsgout('Dialog confirmation message is not captured in GUI.')
@@ -13,5 +13,4 @@ call vimtest#RequestInput('Yes')
 WriteBackupDeleteLastBackup
 
 call ListFiles()
-call vimtest#Quit() 
-
+call vimtest#Quit()
