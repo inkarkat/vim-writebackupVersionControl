@@ -1,5 +1,7 @@
 " Test avoiding backups identical to last backup. 
 
+let g:WriteBackup_AvoidIdenticalBackups = 1
+
 cd $TEMP/WriteBackupTest
 edit important.txt
 %s/current/fourth/
@@ -11,4 +13,3 @@ WriteBackupOfSavedOriginal
 
 call ListFiles()
 call vimtest#Quit() 
-
