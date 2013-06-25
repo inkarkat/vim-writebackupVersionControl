@@ -125,7 +125,7 @@ let s:version = 320
 "				WriteBackup_GetBackupFilename() now takes a
 "				originalFilespec argument, too.
 "				BF: :WriteBackupIsBackedUp doesn't deal
-"				correctly with filenames that contain special ex
+"				correctly with filenames that contain special Ex
 "				characters [%#!]. Now using system() instead of
 "				'silent !' to avoid additional escaping.
 "   1.00.006	07-Mar-2007	Added documentation.
