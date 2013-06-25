@@ -1,4 +1,4 @@
-" Test restore from backup. 
+" Test restore from backup.
 
 if has('gui_running')
     call vimtest#SkipMsgout('Dialog confirmation message is not captured in GUI.')
@@ -30,8 +30,8 @@ call vimtap#file#IsFile('RestoreThisBackup - Y')
 call vimtap#Is(getftime(expand('%')), getftime('important.txt.20061231a'), "Restored file's modification date is equal to backup's modification date")
 
 " Really make sure that the restore didn't just change the buffer contents, but
-" also the file on disk. 
+" also the file on disk.
 edit! important.txt
 call vimtap#Is(getline(1), 'second revision', 'RestoreThisBackup - Y restored backup contents on disk')
 
-call vimtest#Quit() 
+call vimtest#Quit()
