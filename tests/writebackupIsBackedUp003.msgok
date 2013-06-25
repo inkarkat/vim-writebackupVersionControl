@@ -1,0 +1,2 @@
+Test: borked-up diff options
+Encountered problems with 'diff --huh --what' invocation. Unable to compare with latest backup.
