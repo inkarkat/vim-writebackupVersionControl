@@ -11,7 +11,7 @@ call MakeReadonly('important.txt')
 edit important.txt.20061231a
 echomsg 'Test: Cannot overwrite readonly original'
 WriteBackupRestoreThisBackup
-call vimtap#file#IsFilespec('important.txt.20061231a', 'RestoreThisBackup over readonly original fails')
+call vimtap#file#IsFilename('important.txt.20061231a', 'RestoreThisBackup over readonly original fails')
 
 call vimtest#Quit() 
 
