@@ -1,4 +1,4 @@
-" Test restore from predecessor. 
+" Test restore from predecessor.
 
 if has('gui_running')
     call vimtest#SkipMsgout('Dialog confirmation message is not captured in GUI.')
@@ -25,5 +25,4 @@ call vimtap#file#IsFilename('important.txt', 'RestoreFromPred - Y')
 call vimtap#file#IsFile('RestoreFromPred - Y')
 call vimtap#Is(getline(1), 'fourth revision', 'RestoreFromPred - Y predecessor''s contents')
 
-call vimtest#Quit() 
-
+call vimtest#Quit()
