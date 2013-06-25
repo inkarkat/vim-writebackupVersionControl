@@ -220,7 +220,7 @@ endfunction
 function! s:FnameShortenAndEscape( filespec )
 "*******************************************************************************
 "* PURPOSE:
-"   Escapes the passed a:filespec for use in an ex command. In addition, the
+"   Escapes the passed a:filespec for use in an Ex command. In addition, the
 "   filespec is reduced to its shortest possible representation to avoid ugly
 "   long buffer names when :set noautochdir.
 "
@@ -232,7 +232,7 @@ function! s:FnameShortenAndEscape( filespec )
 "   a:filespec	File.
 "* RETURN VALUES:
 "   Shortened filespec suitable for immediate (no more commands that may change
-"   the CWD!) consumption in an ex command.
+"   the CWD!) consumption in an Ex command.
 "*******************************************************************************
     return escapings#fnameescape(fnamemodify(a:filespec, ':~:.'))
 endfunction
@@ -869,7 +869,7 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 
 	" Note: For the :! command, the '!' character must be escaped (cp.
 	" shellescape() with {special}); we assume that in the diff options,
-	" the normal escaping for ex commands has been done by the user.
+	" the normal escaping for Ex commands has been done by the user.
 	" Note: Specify filespecs relative to the diff root, i.e. the
 	" current window's CWD.
 	let l:diffCmd = printf('%s %s %s %s', g:WriteBackup_DiffShellCommand,
