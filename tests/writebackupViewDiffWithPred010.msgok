@@ -1,0 +1,8 @@
+Test: No predecessor
+This is the earliest backup: important.txt.19990815a
+
+Test: No backups
+No backups exist for this file.
+
+Test: Unconfigured diff command
+No diff shell command configured. Unable to show differences to predecessor.
