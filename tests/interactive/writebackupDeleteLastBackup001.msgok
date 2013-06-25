@@ -1,0 +1,16 @@
+Test: No backups exist for this file
+No backups exist for this file.
+
+User: PLEASE PRESS 'No'
+Really delete backup '20080101b'?
+[N]o, (Y)es: 
+Delete canceled.
+
+User: PLEASE PRESS 'Yes'
+Really delete backup '20080101b'?
+[N]o, (Y)es: 
+Deleted backup '20080101b'; last backup now is '20080101a'
+
+Deleted backup '20080101a'; last backup now is '20061231a'
+
+Deleted backup '20061231a'; last backup now is '20061201a'
