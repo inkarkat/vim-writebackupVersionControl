@@ -8,7 +8,7 @@ edit important.txt
 WriteBackupViewDiffWithPred --invalid-argument
 call vimtap#file#IsFilespec('WriteBackupTest/important.txt.diff [Scratch]', 'scratch buffer')
 call vimtap#file#IsNoFile('scratch buffer')
-call vimtap#Is(getline(1), "diff: unrecognized option `--invalid-argument'", 'scratch buffer shows diff error output')
+call vimtap#Like(getline(1), '^diff: \%(unrecognized\|unknown\) option .*invalid-argument', 'scratch buffer shows diff error output')
 
 WriteBackupViewDiffWithPred -u
 call vimtap#file#IsFilespec('WriteBackupTest/important.txt.diff [Scratch]', 'scratch buffer')
