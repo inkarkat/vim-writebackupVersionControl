@@ -5,8 +5,8 @@ Diff command failed; shell returned 2
 
 side-by-side
 
-No differences reported between the current version and backup '20100212a' of 'someplace else.txt'.
++\VNo differences reported between the current version and backup '20\d\{6}a' of 'someplace else.txt'.+
 
 unified diff
 
-No differences reported between the current version and backup '20100212a' of 'someplace else.txt'.
++\VNo differences reported between the current version and backup '20\d\{6}a' of 'someplace else.txt'.+
