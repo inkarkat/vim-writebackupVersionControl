@@ -1,4 +1,4 @@
-" Test deletion of last backup. 
+" Test deletion of last backup.
 
 if has('gui_running')
     call vimtest#SkipMsgout('Dialog confirmation message is not captured in GUI.')
@@ -24,5 +24,4 @@ WriteBackupDeleteLastBackup!
 WriteBackupDeleteLastBackup!
 
 call ListFiles()
-call vimtest#Quit() 
-
+call vimtest#Quit()
