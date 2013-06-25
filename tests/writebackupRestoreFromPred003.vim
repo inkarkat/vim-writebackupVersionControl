@@ -12,7 +12,7 @@ WriteBackupRestoreFromPred!
 
 edit important.txt
 WriteBackupRestoreFromPred!
-call vimtap#file#IsFilespec('important.txt', 'RestoreFromPred!')
+call vimtap#file#IsFilename('important.txt', 'RestoreFromPred!')
 call vimtap#file#IsFile('RestoreFromPred!')
 call vimtap#Is(getline(1), 'fourth revision', 'RestoreFromPred! predecessor''s contents')
 
