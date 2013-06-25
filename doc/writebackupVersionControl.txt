@@ -362,7 +362,7 @@ temporarily resetting the option before glob().
 - Command :WriteBackupOfSavedOriginal now checks that the file is an original
   one.
 - BF: :WriteBackupIsBackedUp doesn't deal correctly with filenames that
-  contain special ex characters [%#!].
+  contain special Ex characters [%#!].
 
 1.00	07-Mar-2007
 Added documentation. First release.
