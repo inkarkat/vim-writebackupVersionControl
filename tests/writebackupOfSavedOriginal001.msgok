@@ -1,0 +1,2 @@
+Test: Cannot backup a backup file
+You can only backup the latest file version, not a backup file itself!
