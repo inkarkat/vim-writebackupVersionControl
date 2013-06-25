@@ -1,10 +1,6 @@
 " Test diff with predecessor. 
 
-function! s:EchoDiff()
-    let l:winNr = winnr()
-    windo setlocal diff?
-    execute l:winNr . 'wincmd w' 
-endfunction
+source helpers/diff.vim
 
 call vimtest#StartTap()
 call vimtap#Plan(7)
@@ -22,7 +18,7 @@ wincmd h
 call vimtap#file#IsFilename('important.txt.20080101b', 'fourth revision to the left')
 call vimtap#window#IsWindows( map(['.20080101b', ''], '"important.txt" . v:val'), 'DiffWithPred fourth & original')
 echomsg 'Test: DiffWithPred fourth & original'
-call s:EchoDiff()
+call EchoDiff()
 
 WriteBackupDiffWithPred
 call vimtap#file#IsFilename('important.txt.20080101b', 'stay at fourth revision')
@@ -30,7 +26,7 @@ wincmd h
 call vimtap#file#IsFilename('important.txt.20080101a', 'third revision to the left')
 call vimtap#window#IsWindows( map(['.20080101a', '.20080101b', ''], '"important.txt" . v:val'), 'DiffWithPred third & fourth & original')
 echomsg 'Test: DiffWithPred third & fourth & original'
-call s:EchoDiff()
+call EchoDiff()
 
 call vimtest#Quit() 
 
