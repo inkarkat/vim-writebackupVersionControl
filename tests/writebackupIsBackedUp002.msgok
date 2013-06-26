@@ -1,5 +1,0 @@
-Test: diff not in PATH
-+Encountered problems with '\%(cmp\|diff\).*' invocation. Unable to compare with latest backup.+
-
-Test: doesnotexit compare command
-Encountered problems with 'doesnotexist -xyz' invocation. Unable to compare with latest backup.
