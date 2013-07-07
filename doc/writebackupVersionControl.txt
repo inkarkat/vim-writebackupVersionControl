@@ -233,6 +233,13 @@ HISTORY					   *WriteBackupVersionControl-history*
 
 3.21	RELEASEME
 - Add dependency to ingo-library (vimscript #4433).
+- Implement abort on error for all commands.
+- CHG: writebackupVersionControl#ListVersions() now indicates no backups exist
+  with 2 instead of 0.
+- CHG: writebackupVersionControl#RestoreThisBackup(),
+  writebackupVersionControl#RestoreFromPred(),
+  writebackupVersionControl#DeleteBackupLastBackup() now indicate user decline
+  with 2 instead of 0.
 
 3.20	14-Dec-2012
 - ENH: Allow to override g:WriteBackup_DiffCreateAlwaysArguments and
