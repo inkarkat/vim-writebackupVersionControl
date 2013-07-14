@@ -3,12 +3,12 @@
 " date file extension in the format '.YYYYMMDD[a-z]'.
 "
 " DEPENDENCIES:
+"   - ingo/buffer/scratch.vim autoload script
+"   - ingo/date.vim autoload script
 "   - ingo/err.vim autoload script
 "   - ingo/msg.vim autoload script
 "   - ingo/plugin/setting.vim autoload script
 "   - escapings.vim autoload script
-"   - ingobuffer.vim autoload script
-"   - ingodate.vim autoload script
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows)
 "
 " Copyright: (C) 2007-2013 Ingo Karkat
@@ -17,6 +17,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.21.037	08-Jul-2013	Move ingodate.vim into ingo-library.
+"			    	Move ingobuffer#MakeScratchBuffer() into
+"				ingo-library.
 "   3.21.036	26-Jun-2013	Replace duplicated copies of s:Error() etc. with
 "				functions from ingo/msg.vim and ingo/err.vim.
 "				Implement abort on error for all commands.
@@ -875,7 +878,7 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	\	escapings#shellescape(l:newFile, 1)
 	\)
 
-	if ! ingobuffer#MakeScratchBuffer(
+	if ! ingo#buffer#scratch#Create(
 	\	l:rootDirspec,
 	\	l:scratchFilename,
 	\	1,
@@ -1045,7 +1048,7 @@ function! s:EchoElapsedTimeSinceVersion( backupFilespec )
     let l:timeElapsed = localtime() - getftime( a:backupFilespec )
     let l:isBackupInFuture = (l:timeElapsed < 0)
 
-    echomsg 'The last backup was done ' . ingodate#HumanReltime(l:timeElapsed) . (l:isBackupInFuture ? '?!' : '.')
+    echomsg 'The last backup was done ' . ingo#date#HumanReltime(l:timeElapsed) . (l:isBackupInFuture ? '?!' : '.')
 endfunction
 function! s:GetBackupDir( originalFilespec )
 "*******************************************************************************
