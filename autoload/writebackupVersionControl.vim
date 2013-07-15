@@ -17,6 +17,11 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.21.038	15-Jul-2013	FIX: :WriteBackupViewDiffWithPred returns
+"				foreign error message because of wrong 0 return
+"				value from writebackupVersionControl#ViewDiff().
+"				Set an explicit l:status value instead of
+"				determining the success solely on v:shell_error.
 "   3.21.037	08-Jul-2013	Move ingodate.vim into ingo-library.
 "			    	Move ingobuffer#MakeScratchBuffer() into
 "				ingo-library.
@@ -888,12 +893,14 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	    throw 'WriteBackupVersionControl: Unable to open diff scratch buffer'
 	endif
 
+	let l:status = 1
 	if v:shell_error < 0 || v:shell_error > 1
 	    let l:save_cursor = [] " Do not restore cursor position.
 
 	    " The diff command exited with an error. The error message is
 	    " probably shown in the scratch buffer, so don't close it. Alert
 	    " the user with an extra error message.
+	    let l:status = 0
 	    redraw
 	    " Always show the actual diff command; this may be useful for
 	    " troubleshooting.
@@ -922,6 +929,7 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	    " differences. (Probably, a unusual diff format like
 	    " --side-by-side has been used.) Keep the buffer, and print a
 	    " simple message.
+	    let l:status = 2
 	    setlocal filetype=diff
 
 	    redraw
@@ -973,7 +981,7 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	    call setpos('.', l:save_cursor)
 	endif
 
-	return (v:shell_error == 0)
+	return l:status
     catch /^Vim\%((\a\+)\)\=:E/
 	call ingo#err#SetVimException()
     catch /^WriteBackup\%(VersionControl\)\?:/
