@@ -240,6 +240,9 @@ HISTORY					   *WriteBackupVersionControl-history*
   writebackupVersionControl#RestoreFromPred(),
   writebackupVersionControl#DeleteBackupLastBackup() now indicate user decline
   with 2 instead of 0.
+- Keep the same 'fileformat' as the original buffer's on
+  :WriteBackupViewDiffWithPred. This matters when the diff is persisted as a
+  patch.
 
 3.20	14-Dec-2012
 - ENH: Allow to override g:WriteBackup_DiffCreateAlwaysArguments and
