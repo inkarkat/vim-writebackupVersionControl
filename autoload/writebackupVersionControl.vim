@@ -17,6 +17,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.21.039	16-Jul-2013	Keep the same 'fileformat' as the original
+"				buffer's. This matters when the diff is
+"				persisted as a patch.
 "   3.21.038	15-Jul-2013	FIX: :WriteBackupViewDiffWithPred returns
 "				foreign error message because of wrong 0 return
 "				value from writebackupVersionControl#ViewDiff().
@@ -872,6 +875,10 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	    let l:newFile = fnamemodify(a:filespec, ':.')
 	endif
 
+	" Keep the same 'fileformat' as the original buffer's. This matters when
+	" the diff is persisted as a patch.
+	let l:originalFileformat = &l:fileformat
+
 	" Note: For the :! command, the '!' character must be escaped (cp.
 	" shellescape() with {special}); we assume that in the diff options,
 	" the normal escaping for Ex commands has been done by the user.
@@ -892,6 +899,8 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	\)
 	    throw 'WriteBackupVersionControl: Unable to open diff scratch buffer'
 	endif
+
+	let &l:fileformat = l:originalFileformat    " XXX: Cannot set the fileformat with :new ++fileformat= in Vim 7.3, though the documentation says it should work.
 
 	let l:status = 1
 	if v:shell_error < 0 || v:shell_error > 1
