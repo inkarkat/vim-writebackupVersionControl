@@ -4,11 +4,11 @@
 "
 " DEPENDENCIES:
 "   - ingo/buffer/scratch.vim autoload script
+"   - ingo/compat.vim autoload script
 "   - ingo/date.vim autoload script
 "   - ingo/err.vim autoload script
 "   - ingo/msg.vim autoload script
 "   - ingo/plugin/setting.vim autoload script
-"   - escapings.vim autoload script
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows)
 "
 " Copyright: (C) 2007-2013 Ingo Karkat
@@ -17,6 +17,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.21.040	08-Aug-2013	Move escapings.vim into ingo-library.
 "   3.21.039	16-Jul-2013	Keep the same 'fileformat' as the original
 "				buffer's. This matters when the diff is
 "				persisted as a patch.
@@ -242,7 +243,7 @@ function! s:FnameShortenAndEscape( filespec )
 "   Shortened filespec suitable for immediate (no more commands that may change
 "   the CWD!) consumption in an Ex command.
 "*******************************************************************************
-    return escapings#fnameescape(fnamemodify(a:filespec, ':~:.'))
+    return ingo#compat#fnameescape(fnamemodify(a:filespec, ':~:.'))
 endfunction
 
 
@@ -886,8 +887,8 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	" current window's CWD.
 	let l:diffCmd = printf('%s %s %s %s', g:WriteBackup_DiffShellCommand,
 	\	escape(s:GetDiffOptions(a:diffOptions), '!'),
-	\	escapings#shellescape(l:oldFile, 1),
-	\	escapings#shellescape(l:newFile, 1)
+	\	ingo#compat#shellescape(l:oldFile, 1),
+	\	ingo#compat#shellescape(l:newFile, 1)
 	\)
 
 	if ! ingo#buffer#scratch#Create(
@@ -1196,8 +1197,8 @@ function! s:AreIdentical( filespec1, filespec2 )
     " on Windows systems with UNC paths.
     let l:diffCmd = printf('%s %s %s',
     \	g:WriteBackup_CompareShellCommand,
-    \	escapings#shellescape(fnamemodify(a:filespec1, ':p')),
-    \	escapings#shellescape(fnamemodify(a:filespec2, ':p'))
+    \	ingo#compat#shellescape(fnamemodify(a:filespec1, ':p')),
+    \	ingo#compat#shellescape(fnamemodify(a:filespec2, ':p'))
     \)
 
     " Using the system() command even though we're not interested in the command
@@ -1325,7 +1326,7 @@ function! s:Copy( source, target, isForced, isKeepModificationDate )
 	    let l:copyShellCmd = (s:IsFileReadonly(a:target) ? 'xcopy /Q /R /Y %s %s' : 'copy /Y %s %s')
 	else
 	    let l:copyShellCmd = (s:IsFileReadonly(a:target) ?
-	    \   'xcopy /Q /R /Y %s %s && copy /B /Y ' . escapings#shellescape(l:targetFilespec) . ' +,,' :
+	    \   'xcopy /Q /R /Y %s %s && copy /B /Y ' . ingo#compat#shellescape(l:targetFilespec) . ' +,,' :
 	    \   'copy /B /Y %s +NUL %s'
 	    \)
 	endif
@@ -1341,8 +1342,8 @@ function! s:Copy( source, target, isForced, isKeepModificationDate )
 	throw 'WriteBackupVersionControl: Unsupported operating system type.'
     endif
     let l:copyCmd = printf(l:copyShellCmd,
-    \	escapings#shellescape(l:sourceFilespec),
-    \	escapings#shellescape(l:targetFilespec)
+    \	ingo#compat#shellescape(l:sourceFilespec),
+    \	ingo#compat#shellescape(l:targetFilespec)
     \)
 
     let l:cmdOutput = system(l:copyCmd)
