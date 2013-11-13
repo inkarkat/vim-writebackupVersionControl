@@ -2,7 +2,7 @@ Test: No backups exist for this file
 No backups exist for this file.
 
 Test: Listing from file's directory
-/These backups exist for file 'important.txt': \n\?/
+/These backups exist for file 'important.txt':\n\?/
 19990815a
 20061201a
 20061231a
@@ -11,7 +11,7 @@ Test: Listing from file's directory
 
 Test: Listing with a different CWD, new recent backup
 
-/These backups exist for file '.*[/\\]WriteBackupTest[/\\]important.txt': \n\?/
+/These backups exist for file '.*[/\\]WriteBackupTest[/\\]important.txt':\n\?/
 
 19990815a
 20061201a
@@ -19,4 +19,3 @@ Test: Listing with a different CWD, new recent backup
 20080101ab
 /20\d\{6}a/
 The last backup was done just now.
-
