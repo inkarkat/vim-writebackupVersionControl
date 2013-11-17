@@ -1,0 +1,23 @@
+Test: Listing of differing case files from file's directory
+/These backups exist for file 'important.txt':\n\?/
+
+19990815a
+20061201a
+20061212a
+20061231a
+20070707ab
+20080101ab
+/The last backup was done \d\+ days ago\./
+
+Test: Listing with a different CWD, new recent backup
+
+/These backups exist for file '.*[/\\]WriteBackupTest[/\\]important.txt':\n\?/
+
+19990815a
+20061201a
+20061212a
+20061231a
+20070707ab
+20080101ab
+/20\d\{6}a/
+The last backup was done just now.
