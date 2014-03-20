@@ -8,6 +8,7 @@
 "   - ingo/date.vim autoload script
 "   - ingo/err.vim autoload script
 "   - ingo/msg.vim autoload script
+"   - ingo/os.vim autoload script
 "   - ingo/plugin/setting.vim autoload script
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows)
 "
@@ -17,6 +18,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.21.041	13-Sep-2013	Use operating system detection functions from
+"				ingo/os.vim.
 "   3.21.040	08-Aug-2013	Move escapings.vim into ingo-library.
 "   3.21.039	16-Jul-2013	Keep the same 'fileformat' as the original
 "				buffer's. This matters when the diff is
@@ -1314,7 +1317,7 @@ function! s:Copy( source, target, isForced, isKeepModificationDate )
     let l:sourceFilespec = fnamemodify( a:source, ':p' )
     let l:targetFilespec = fnamemodify( a:target, ':p' )
 
-    if has('win32') || has('win64')
+    if ingo#os#IsWinOrDos()
 	" On Windows, "copy" cannot overwrite a readonly target; only "xcopy"
 	" can (with the /R option).
 	"
