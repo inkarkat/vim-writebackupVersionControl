@@ -11,6 +11,7 @@ description			|WriteBackupVersionControl-description|
 usage				|WriteBackupVersionControl-usage|
 installation			|WriteBackupVersionControl-installation|
 configuration			|WriteBackupVersionControl-configuration|
+limitations			|WriteBackupVersionControl-limitations|
 known problems			|WriteBackupVersionControl-known-problems|
 todo				|WriteBackupVersionControl-todo|
 history				|WriteBackupVersionControl-history|
@@ -218,6 +219,8 @@ the |:new| command. You can add window command modifiers like |:vertical| or
     let g:WriteBackup_ScratchBufferCommandModifiers = 'topleft'
 <
 ==============================================================================
+LIMITATIONS			       *WriteBackupVersionControl-limitations*
+
 KNOWN PROBLEMS			    *WriteBackupVersionControl-known-problems*
 
 TODO					      *WriteBackupVersionControl-todo*
@@ -231,8 +234,7 @@ IDEAS									    *
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
 
-3.21	RELEASEME
-- Add dependency to ingo-library (vimscript #4433).
+3.21	29-Jan-2014
 - Implement abort on error for all commands.
 - CHG: writebackupVersionControl#ListVersions() now indicates no backups exist
   with 2 instead of 0.
@@ -243,6 +245,8 @@ HISTORY					   *WriteBackupVersionControl-history*
 - Keep the same 'fileformat' as the original buffer's on
   :WriteBackupViewDiffWithPred. This matters when the diff is persisted as a
   patch.
+- Add dependency to ingo-library (vimscript #4433). *** You need to separately
+  install ingo-library (vimscript #4433) version 1.013 (or higher)! ***
 
 3.20	14-Dec-2012
 - ENH: Allow to override g:WriteBackup_DiffCreateAlwaysArguments and
@@ -381,7 +385,7 @@ Added documentation. First release.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2007-2013 Ingo Karkat
+Copyright: (C) 2007-2014 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
