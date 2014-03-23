@@ -5,12 +5,16 @@ if has('gui_running')
 endif
 
 call vimtest#StartTap()
-call vimtap#Plan(8)
+call vimtap#Plan(9)
 
 cd $TEMP/WriteBackupTest
 edit important.txt
-echomsg 'Test: Cannot restore from original file'
-WriteBackupRestoreThisBackup
+try
+    WriteBackupRestoreThisBackup
+    call vimtap#Fail('expected error on original file')
+catch
+    call vimtap#err#Thrown('You can only restore backup files!', 'error shown')
+endtry
 
 edit important.txt.20061231a
 call vimtest#RequestInput('No')
