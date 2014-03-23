@@ -7,7 +7,7 @@
 " compare shell command checks whether the command is executable(), so this
 " could only occur if the user configures a non-existing compare shell
 " command.
-call vimtest#SkipAndQuitIf(has('win32') || has('win64'), 'Windows returns 1 for both differing files and no executable found')
+call vimtest#SkipAndQuitIf(ingo#os#IsWindows(), 'Windows returns 1 for both differing files and no executable found')
 
 call vimtest#StartTap()
 call vimtap#Plan(2)
