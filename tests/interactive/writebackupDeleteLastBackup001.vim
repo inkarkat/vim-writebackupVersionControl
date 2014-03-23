@@ -5,13 +5,17 @@ if has('gui_running')
 endif
 
 call vimtest#StartTap()
-call vimtap#Plan(2)
+call vimtap#Plan(3)
 
 cd $TEMP/WriteBackupTest
 edit not\ important.txt
 
-echomsg 'Test: No backups exist for this file'
-WriteBackupDeleteLastBackup
+try
+    WriteBackupDeleteLastBackup
+    call vimtap#Fail('expected error: No backups exist for this file')
+catch
+    call vimtap#err#Thrown('No backups exist for this file.', 'error shown')
+endtry
 
 edit important.txt
 call vimtest#RequestInput('No')
