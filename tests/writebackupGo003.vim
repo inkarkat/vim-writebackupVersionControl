@@ -6,12 +6,7 @@ call vimtap#Plan(4)
 cd $TEMP/WriteBackupTest
 edit important.txt
 normal! Goedited.
-try
-    WriteBackupGoPrev
-    call vimtap#Fail('expected error with modified original buffer')
-catch
-    call vimtap#err#Thrown('E37: No write since last change (add ! to override)', 'error shown')
-endtry
+call vimtap#err#Errors('E37: No write since last change (add ! to override)', 'WriteBackupGoPrev', 'error shown')
 call vimtap#file#IsFilename('important.txt', 'GoPrev on modified buffer')
 
 WriteBackupGoPrev!
