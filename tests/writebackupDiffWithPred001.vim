@@ -1,14 +1,18 @@
-" Test diff with predecessor. 
+" Test diff with predecessor.
 
 source helpers/diff.vim
 
 call vimtest#StartTap()
-call vimtap#Plan(7)
+call vimtap#Plan(8)
 
 cd $TEMP/WriteBackupTest
 edit important.txt.19990815a
-echomsg 'Test: No predecessor'
-WriteBackupDiffWithPred
+try
+    WriteBackupDiffWithPred
+    call vimtap#Fail('expected error when no predecessor')
+catch
+    call vimtap#err#Thrown('This is the earliest backup: important.txt.19990815a', 'error shown')
+endtry
 call vimtap#file#IsFilename('important.txt.19990815a', 'no predecessor')
 
 edit important.txt
@@ -28,5 +32,4 @@ call vimtap#window#IsWindows( map(['.20080101a', '.20080101b', ''], '"important.
 echomsg 'Test: DiffWithPred third & fourth & original'
 call EchoDiff()
 
-call vimtest#Quit() 
-
+call vimtest#Quit()
