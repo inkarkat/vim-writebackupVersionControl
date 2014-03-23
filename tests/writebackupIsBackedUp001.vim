@@ -1,7 +1,7 @@
 " Test check for backup.
 
 call vimtest#StartTap()
-call vimtap#Plan(6)
+call vimtap#Plan(2)
 
 cd $TEMP/WriteBackupTest
 edit important.txt.20080101b
@@ -21,37 +21,21 @@ catch
 endtry
 
 edit important.txt
-try
-    WriteBackupIsBackedUp
-    call vimtap#Fail('expected error when differing backup')
-catch
-    call vimtap#err#Thrown("The current version of 'important.txt' is different from the latest backup '20080101b'.", 'error shown')
-endtry
+echomsg 'Test: Differing backup'
+WriteBackupIsBackedUp
 
 WriteBackup
-try
-    WriteBackupIsBackedUp
-    call vimtap#Fail('expected error when identical')
-catch
-    call vimtap#err#ThrownLike("\\VThe current version of 'important.txt' is identical with the latest backup '20\\d\\{6}a'.", 'error shown')
-endtry
+echomsg 'Test: Identical'
+WriteBackupIsBackedUp
 
 normal! Goedited.
-try
-    WriteBackupIsBackedUp
-    call vimtap#Fail('expected error when saved identical')
-catch
-    call vimtap#err#ThrownLike("\\VThe current saved version of 'important.txt' is identical with the latest backup '20\\\\d\\\\{6}a'.", 'error shown')
-endtry
+echomsg 'Test: Saved identical'
+WriteBackupIsBackedUp
 
 edit! important.txt
 normal! ggg~~
 write
-try
-    WriteBackupIsBackedUp
-    call vimtap#Fail('expected error when backup differing only in file contents, not size')
-catch
-    call vimtap#err#ThrownLike("\\VThe current version of 'important.txt' is different from the latest backup '20\\\\d\\\\{6}a'.", 'error shown')
-endtry
+echomsg 'Test: Backup differing only in file contents, not size'
+WriteBackupIsBackedUp
 
 call vimtest#Quit()
