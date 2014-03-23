@@ -1,14 +1,18 @@
-" Test diff todays changes from current. 
+" Test diff todays changes from current.
 
 source helpers/diff.vim
 
 call vimtest#StartTap()
-call vimtap#Plan(4)
+call vimtap#Plan(5)
 
 cd $TEMP/WriteBackupTest
 edit not\ important.txt
-echomsg 'Test: No backups'
-WriteBackupDiffDaysChanges
+try
+    WriteBackupDiffDaysChanges
+    call vimtap#Fail('expected error when no backups')
+catch
+    call vimtap#err#Thrown('No backups exist for this file.', 'error shown')
+endtry
 call vimtap#file#IsFilename('not important.txt', 'no backups')
 
 WriteBackup
@@ -28,4 +32,4 @@ call vimtap#window#IsWindows(['not important.txt.'.s:today.'a', 'not important.t
 echomsg 'Test: DiffDaysChanges'
 call EchoDiff()
 
-call vimtest#Quit() 
+call vimtest#Quit()
