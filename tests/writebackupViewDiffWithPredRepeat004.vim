@@ -1,7 +1,7 @@
 " Test repeat view diff after error.
 
 call vimtest#StartTap()
-call vimtap#Plan(13)
+call vimtap#Plan(12)
 
 cd $TEMP/WriteBackupTest
 edit important.txt
@@ -15,12 +15,7 @@ call vimtap#file#IsFilespec('WriteBackupTest/important.txt.diff [Scratch]', 'scr
 call vimtap#file#IsNoFile('scratch buffer')
 call vimtap#Like(getline(1), '^diff: \%(unrecognized\|unknown\) option .*invalid-argument', 'scratch buffer shows diff error output')
 
-try
-    WriteBackupViewDiffWithPred -u
-    call vimtap#Fail('expected error when attempting diff in diff scratch buffer')
-catch
-    call vimtap#err#Thrown('Diff command failed; shell returned 2', 'error shown')
-endtry
+WriteBackupViewDiffWithPred -u
 call vimtap#file#IsFilespec('WriteBackupTest/important.txt.diff [Scratch]', 'scratch buffer')
 call vimtap#file#IsNoFile('scratch buffer')
 call vimtap#Is(getline(3), '@@ -1,2 +1,2 @@', 'scratch buffers shows unified diff')
