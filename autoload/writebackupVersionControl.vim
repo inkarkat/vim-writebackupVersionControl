@@ -7,17 +7,22 @@
 "   - ingo/compat.vim autoload script
 "   - ingo/date.vim autoload script
 "   - ingo/err.vim autoload script
+"   - ingo/escape/file.vim autoload script
 "   - ingo/msg.vim autoload script
 "   - ingo/os.vim autoload script
 "   - ingo/plugin/setting.vim autoload script
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows)
 "
-" Copyright: (C) 2007-2013 Ingo Karkat
+" Copyright: (C) 2007-2014 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.22.042	21-Mar-2014	FIX: Avoid "E16: Invalid range" in
+"				writebackupVersionControl#GetAllBackupsForFile()
+"				with a filename containing "[[" by escaping the
+"				filespec for wildcard characters.
 "   3.21.041	13-Sep-2013	Use operating system detection functions from
 "				ingo/os.vim.
 "   3.21.040	08-Aug-2013	Move escapings.vim into ingo-library.
@@ -426,7 +431,7 @@ function! writebackupVersionControl#GetAllBackupsForFile( filespec )
 	" glob() will do the right thing and return an empty list if
 	" l:adjustedBackupFilespec doesn't yet exist, because no backup has yet been
 	" made.
-	let l:backupFiles = split(glob(l:adjustedBackupFilespec . s:versionFileGlob), "\n")
+	let l:backupFiles = split(glob(ingo#escape#file#wildcardescape(l:adjustedBackupFilespec) . s:versionFileGlob), "\n")
 
 	" Although the glob should already be sorted alphabetically in ascending
 	" order, we'd better be sure and sort the list on our own, too.
