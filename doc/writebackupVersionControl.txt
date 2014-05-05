@@ -169,7 +169,7 @@ DEPENDENCIES			      *WriteBackupVersionControl-dependencies*
 - Requires Vim 7.0 or higher.
 - Requires the |writebackup.vim| plugin (vimscript #1828), version 2.00 or
   higher.
-- Requires the |ingo-library.vim| plugin (vimscript #4433), version 1.013 or
+- Requires the |ingo-library.vim| plugin (vimscript #4433), version 1.018 or
   higher.
 - External command "cmp" or "diff" (or equivalent) for comparison.
 - External command "diff" or equivalent for listing of differences.
@@ -233,6 +233,12 @@ IDEAS									    *
 
 ==============================================================================
 HISTORY					   *WriteBackupVersionControl-history*
+
+3.22	RELEASEME
+- FIX: Avoid "E16: Invalid range" in
+  writebackupVersionControl#GetAllBackupsForFile() with a filename containing
+  "[[" by escaping the filespec for wildcard characters.
+  *** You need to update to ingo-library (vimscript #4433) version 1.018! ***
 
 3.21	29-Jan-2014
 - Implement abort on error for all commands.
