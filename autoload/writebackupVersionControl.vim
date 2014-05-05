@@ -19,6 +19,15 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.22.043	06-May-2014	Make Unix 'cp' command configurable via
+"				g:WriteBackupCopyShellCommand.
+"				Support non-GNU cp command (e.g. on BSD) that
+"				doesn't support the --preserve=timestamp
+"				argument by making it configurable
+"				(g:WriteBackupCopyPreserveArgument) and
+"				implemening a heuristic that falls back to the
+"				POSIX -p option if the original cp command
+"				failed.
 "   3.22.042	21-Mar-2014	FIX: Avoid "E16: Invalid range" in
 "				writebackupVersionControl#GetAllBackupsForFile()
 "				with a filename containing "[[" by escaping the
@@ -1341,10 +1350,10 @@ function! s:Copy( source, target, isForced, isKeepModificationDate )
     elseif has('unix')
 	" "cp" needs to be instructed to keep the source's modification date via
 	" an option.
-	let l:preserveArg = (a:isKeepModificationDate ? ' --preserve=timestamps' : '')
-	let l:copyShellCmd = (s:IsFileReadonly(a:target) ?
-	\   'cp -f' . l:preserveArg . ' -- %s %s' :
-	\   'cp'    . l:preserveArg . ' -- %s %s'
+	let l:preserveArg = (a:isKeepModificationDate ? g:WriteBackupCopyPreserveArgument : [])
+	let l:copyShellCmd = ingo#collections#Flatten1(s:IsFileReadonly(a:target) ?
+	\   [g:WriteBackupCopyShellCommand, '-f', l:preserveArg, ' -- %s %s'] :
+	\   [g:WriteBackupCopyShellCommand,       l:preserveArg, ' -- %s %s']
 	\)
     else
 	throw 'WriteBackupVersionControl: Unsupported operating system type.'
