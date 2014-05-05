@@ -5,7 +5,7 @@
 " reported.
 
 cd $TEMP/WriteBackupTest
-if has('win32') || has('win64')
+if ingo#os#IsWinOrDos()
     call vimtest#System('call unix --quiet && touch --date=+45seconds important.txt.20080101b')
 else
     call vimtest#System('touch --date=+45seconds important.txt.20080101b')
@@ -16,4 +16,3 @@ echomsg 'Test: Backup from the future'
 WriteBackupListVersions
 
 call vimtest#Quit()
-
