@@ -613,7 +613,7 @@ function! s:EditFile( filespec, isBang, isReadonly )
 	endif
 
 	return 1
-    catch /^Vim\%((\a\+)\)\=:E/
+    catch /^Vim\%((\a\+)\)\=:/
 	call ingo#err#SetVimException()
 	return 0
     endtry
@@ -744,7 +744,7 @@ function! writebackupVersionControl#DiffWithPred( filespec, count )
 	    call s:DiffFile(l:predecessor)
 	    return 1
 	endif
-    catch /^Vim\%((\a\+)\)\=:E/
+    catch /^Vim\%((\a\+)\)\=:/
 	call ingo#err#SetVimException()
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg()
@@ -779,7 +779,7 @@ function! writebackupVersionControl#DiffDaysChanges( filespec, count )
 	    call s:DiffFile(l:predecessor)
 	    return 1
 	endif
-    catch /^Vim\%((\a\+)\)\=:E/
+    catch /^Vim\%((\a\+)\)\=:/
 	call ingo#err#SetVimException()
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg()
@@ -1000,7 +1000,7 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	endif
 
 	return l:status
-    catch /^Vim\%((\a\+)\)\=:E/
+    catch /^Vim\%((\a\+)\)\=:/
 	call ingo#err#SetVimException()
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg()
@@ -1446,7 +1446,7 @@ function! writebackupVersionControl#RestoreFromPred( originalFilespec, isForced,
 	else
 	    return 2
 	endif
-    catch /^Vim\%((\a\+)\)\=:E/
+    catch /^Vim\%((\a\+)\)\=:/
 	call ingo#err#SetVimException()
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg()
@@ -1491,7 +1491,7 @@ function! writebackupVersionControl#RestoreThisBackup( filespec, isForced )
 	else
 	    return 2
 	endif
-    catch /^Vim\%((\a\+)\)\=:E/
+    catch /^Vim\%((\a\+)\)\=:/
 	call ingo#err#SetVimException()
     catch /^WriteBackup\%(VersionControl\)\?:/
 	call s:ExceptionMsg()
