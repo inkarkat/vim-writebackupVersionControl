@@ -238,6 +238,11 @@ HISTORY					   *WriteBackupVersionControl-history*
 - FIX: Avoid "E16: Invalid range" in
   writebackupVersionControl#GetAllBackupsForFile() with a filename containing
   "[[" by escaping the filespec for wildcard characters.
+- Make Unix 'cp' command configurable via g:WriteBackupCopyShellCommand.
+- Support non-GNU cp command (e.g. on BSD) that doesn't support the
+  --preserve=timestamp argument by making it configurable
+  (g:WriteBackupCopyPreserveArgument) and implemening a heuristic that falls
+  back to the POSIX -p option if the original cp command failed.
   *** You need to update to ingo-library (vimscript #4433) version 1.018! ***
 
 3.21	29-Jan-2014
