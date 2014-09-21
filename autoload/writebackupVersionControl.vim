@@ -5,6 +5,7 @@
 " DEPENDENCIES:
 "   - ingo/buffer/scratch.vim autoload script
 "   - ingo/compat.vim autoload script
+"   - ingo/collections.vim autoload script
 "   - ingo/date.vim autoload script
 "   - ingo/err.vim autoload script
 "   - ingo/escape/file.vim autoload script
@@ -1351,10 +1352,10 @@ function! s:Copy( source, target, isForced, isKeepModificationDate )
 	" "cp" needs to be instructed to keep the source's modification date via
 	" an option.
 	let l:preserveArg = (a:isKeepModificationDate ? g:WriteBackupCopyPreserveArgument : [])
-	let l:copyShellCmd = ingo#collections#Flatten1(s:IsFileReadonly(a:target) ?
+	let l:copyShellCmd = join(ingo#collections#Flatten1(s:IsFileReadonly(a:target) ?
 	\   [g:WriteBackupCopyShellCommand, '-f', l:preserveArg, ' -- %s %s'] :
 	\   [g:WriteBackupCopyShellCommand,       l:preserveArg, ' -- %s %s']
-	\)
+	\))
     else
 	throw 'WriteBackupVersionControl: Unsupported operating system type.'
     endif
@@ -1365,7 +1366,14 @@ function! s:Copy( source, target, isForced, isKeepModificationDate )
 
     let l:cmdOutput = system(l:copyCmd)
     if v:shell_error != 0
-	throw l:cmdOutput
+	if v:shell_error == 64 && g:WriteBackupCopyPreserveArgument =~# '^--preserve'
+	    " Probably, the "cp" command is not the GNU variant and doesn't
+	    " support --preserve. Try again with the POSIX -p option.
+	    let g:WriteBackupCopyPreserveArgument = '-p'
+	    call s:Copy(a:source, a:target, a:isForced, a:isKeepModificationDate)
+	else
+	    throw l:cmdOutput
+	endif
     endif
 endfunction
 function! s:Restore( source, target, isForced, confirmationMessage )
