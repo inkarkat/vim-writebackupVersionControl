@@ -20,6 +20,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.22.044	22-Sep-2014	Use ingo#compat#glob().
 "   3.22.043	06-May-2014	Make Unix 'cp' command configurable via
 "				g:WriteBackupCopyShellCommand.
 "				Support non-GNU cp command (e.g. on BSD) that
@@ -426,34 +427,24 @@ function! writebackupVersionControl#GetAllBackupsForFile( filespec )
     " glob() filters out file patterns defined in 'wildignore'. If someone wants
     " to ignore backup files for command mode file name completion and puts the
     " backup file pattern into 'wildignore', this function will break.
-    " Thus, the 'wildignore' option is temporarily reset here.
-    if has('wildignore')
-	let l:save_wildignore = &wildignore
-	set wildignore=
-    endif
-    try
-	" For globbing, we need the filespec of an imaginary file in the backup
-	" directory, to which we can append our file version glob. (The backup
-	" files may reside in a directory different from the original file;
-	" that's why we cannot simply use the original filespec for globbing.)
-	let l:adjustedBackupFilespec = writebackupVersionControl#GetAdjustedBackupFilespec(a:filespec)
+    " Thus, the 'wildignore' option must be ignored here.
 
-	" glob() will do the right thing and return an empty list if
-	" l:adjustedBackupFilespec doesn't yet exist, because no backup has yet been
-	" made.
-	let l:backupFiles = split(glob(ingo#escape#file#wildcardescape(l:adjustedBackupFilespec) . s:versionFileGlob), "\n")
+    " For globbing, we need the filespec of an imaginary file in the backup
+    " directory, to which we can append our file version glob. (The backup
+    " files may reside in a directory different from the original file;
+    " that's why we cannot simply use the original filespec for globbing.)
+    let l:adjustedBackupFilespec = writebackupVersionControl#GetAdjustedBackupFilespec(a:filespec)
 
-	" Although the glob should already be sorted alphabetically in ascending
-	" order, we'd better be sure and sort the list on our own, too.
-	let l:backupFiles = sort(l:backupFiles, 's:SortByBackupVersion')
+    " glob() will do the right thing and return an empty list if
+    " l:adjustedBackupFilespec doesn't yet exist, because no backup has yet been
+    " made.
+    let l:backupFiles = ingo#compat#glob(ingo#escape#file#wildcardescape(l:adjustedBackupFilespec) . s:versionFileGlob, 1, 1)
+
+    " Although the glob should already be sorted alphabetically in ascending
+    " order, we'd better be sure and sort the list on our own, too.
+    let l:backupFiles = sort(l:backupFiles, 's:SortByBackupVersion')
 "****D echo '**** backupfiles: ' . l:backupFiles
-	return l:backupFiles
-    finally
-	if has('wildignore')
-	    let &wildignore = l:save_wildignore
-	endif
-    endtry
-
+    return l:backupFiles
 endfunction
 
 function! s:GetIndexOfVersion( backupFiles, currentVersion )
