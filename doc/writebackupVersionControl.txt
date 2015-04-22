@@ -169,7 +169,7 @@ DEPENDENCIES			      *WriteBackupVersionControl-dependencies*
 - Requires Vim 7.0 or higher.
 - Requires the |writebackup.vim| plugin (vimscript #1828), version 2.00 or
   higher.
-- Requires the |ingo-library.vim| plugin (vimscript #4433), version 1.018 or
+- Requires the |ingo-library.vim| plugin (vimscript #4433), version 1.022 or
   higher.
 - External command "cmp" or "diff" (or equivalent) for comparison.
 - External command "diff" or equivalent for listing of differences.
@@ -243,7 +243,8 @@ HISTORY					   *WriteBackupVersionControl-history*
   --preserve=timestamp argument by making it configurable
   (g:WriteBackupCopyPreserveArgument) and implemening a heuristic that falls
   back to the POSIX -p option if the original cp command failed.
-  *** You need to update to ingo-library (vimscript #4433) version 1.018! ***
+- Use ingo#compat#glob().
+  *** You need to update to ingo-library (vimscript #4433) version 1.022! ***
 
 3.21	29-Jan-2014
 - Implement abort on error for all commands.
