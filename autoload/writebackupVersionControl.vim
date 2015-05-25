@@ -14,12 +14,18 @@
 "   - ingo/plugin/setting.vim autoload script
 "   - External copy command "cp" (Unix), "copy" and "xcopy" (Windows)
 "
-" Copyright: (C) 2007-2014 Ingo Karkat
+" Copyright: (C) 2007-2015 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.22.045	23-Apr-2015	ingo#buffer#scratch#Create() from
+"				ingo-library.vim version 1.024 doesn't position
+"				the cursor on the first line any more;
+"				explicitly do this, as the alternative condition
+"				of the potential original cursor position
+"				restore depends on this.
 "   3.22.044	22-Sep-2014	Use ingo#compat#glob().
 "   3.22.043	06-May-2014	Make Unix 'cp' command configurable via
 "				g:WriteBackupCopyShellCommand.
@@ -909,6 +915,7 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	\)
 	    throw 'WriteBackupVersionControl: Unable to open diff scratch buffer'
 	endif
+	call cursor(1, 1)   " The :1read ! command positions the cursor on the last read line, but we either want the cursor at the start of the buffer, or at the original position (which we've saved in l:save_cursor already).
 
 	let &l:fileformat = l:originalFileformat    " XXX: Cannot set the fileformat with :new ++fileformat= in Vim 7.3, though the documentation says it should work.
 
