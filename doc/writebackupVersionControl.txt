@@ -244,6 +244,10 @@ HISTORY					   *WriteBackupVersionControl-history*
   (g:WriteBackupCopyPreserveArgument) and implemening a heuristic that falls
   back to the POSIX -p option if the original cp command failed.
 - Use ingo#compat#glob().
+- ingo#buffer#scratch#Create() from ingo-library.vim version 1.024 doesn't
+  position the cursor on the first line any more; explicitly do this, as the
+  alternative condition of the potential original cursor position restore
+  depends on this.
   *** You need to update to ingo-library (vimscript #4433) version 1.022! ***
 
 3.21	29-Jan-2014
@@ -397,7 +401,7 @@ Added documentation. First release.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2007-2014 Ingo Karkat
+Copyright: (C) 2007-2015 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
