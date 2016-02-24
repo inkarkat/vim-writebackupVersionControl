@@ -3,6 +3,8 @@
 call vimtest#StartTap()
 call vimtap#Plan(7)
 
+let g:WriteBackup_ScratchBufferCommandModifiers = 'topleft'
+
 cd $TEMP/WriteBackupTest
 edit important.txt
 WriteBackupViewDiffWithPred
