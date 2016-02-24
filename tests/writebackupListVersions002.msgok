@@ -1,5 +1,5 @@
 Test: Backup from the future
-/These backups exist for file 'important.txt': \n\?/
+/These backups exist for file 'important.txt':\n\?/
 19990815a
 20061201a
 20061231a
