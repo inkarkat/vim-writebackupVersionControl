@@ -15,12 +15,7 @@ write
 echomsg 'Test: Saved original is identical to old backup'
 WriteBackupOfSavedOriginal
 
-try
-    WriteBackupOfSavedOriginal
-    call vimtap#Fail('expected error: Saved original is identical to recent backup')
-catch
-    call vimtap#err#ThrownLike("\\VThis file is already backed up as '20\\d\\{6}a'", 'error shown')
-endtry
+call vimtap#err#ErrorsLike("\\VThis file is already backed up as '20\\d\\{6}a'", 'WriteBackupOfSavedOriginal', 'error shown')
 
 call ListFiles()
 call vimtest#Quit()
