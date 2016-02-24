@@ -11,12 +11,7 @@ edit important.txt
 %s/simplified/removed a line/
 write
 %s/fourth/fifth/
-try
-    WriteBackupOfSavedOriginal
-    call vimtap#Fail('expected error: Saved original is identical to old backup')
-catch
-    call vimtap#err#Thrown("This file is already backed up as '20080101b'", 'error shown')
-endtry
+call vimtap#err#Errors("This file is already backed up as '20080101b'", 'WriteBackupOfSavedOriginal', 'error shown')
 
 call ListFiles()
 call vimtest#Quit()
