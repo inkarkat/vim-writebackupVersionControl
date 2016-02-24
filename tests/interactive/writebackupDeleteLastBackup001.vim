@@ -10,12 +10,7 @@ call vimtap#Plan(3)
 cd $TEMP/WriteBackupTest
 edit not\ important.txt
 
-try
-    WriteBackupDeleteLastBackup
-    call vimtap#Fail('expected error: No backups exist for this file')
-catch
-    call vimtap#err#Thrown('No backups exist for this file.', 'error shown')
-endtry
+call vimtap#err#Errors('No backups exist for this file.', 'WriteBackupDeleteLastBackup', 'error shown')
 
 edit important.txt
 call vimtest#RequestInput('No')
