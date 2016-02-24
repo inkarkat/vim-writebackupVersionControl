@@ -9,11 +9,6 @@ WriteBackup
 
 let g:WriteBackup_CompareShellCommand = ''
 
-try
-    WriteBackupIsBackedUp
-    call vimtap#Fail('expected error with unconfigured compare command')
-catch
-    call vimtap#err#Thrown('No compare shell command configured. Unable to compare with latest backup.', 'error shown')
-endtry
+call vimtap#err#Errors('No compare shell command configured. Unable to compare with latest backup.', 'WriteBackupIsBackedUp', 'error shown')
 
 call vimtest#Quit()
