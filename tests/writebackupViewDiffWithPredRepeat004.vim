@@ -5,12 +5,7 @@ call vimtap#Plan(12)
 
 cd $TEMP/WriteBackupTest
 edit important.txt
-try
-    WriteBackupViewDiffWithPred --invalid-argument
-    call vimtap#Fail('expected error when giving invalid diff argument')
-catch
-    call vimtap#err#Thrown('Diff command failed; shell returned 2', 'error shown')
-endtry
+call vimtap#err#Errors('Diff command failed; shell returned 2', 'WriteBackupViewDiffWithPred --invalid-argument', 'error shown')
 call vimtap#file#IsFilespec('WriteBackupTest/important.txt.diff [Scratch]', 'scratch buffer')
 call vimtap#file#IsNoFile('scratch buffer')
 call vimtap#Like(getline(1), '^diff: \%(unrecognized\|unknown\) option .*invalid-argument', 'scratch buffer shows diff error output')
