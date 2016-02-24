@@ -1,0 +1,19 @@
+Test: diff original with pred
+
++No differences reported between the current version and backup '20\d\{6}b' of 'important.txt'.+
+
+Test: diff original with 2nd pred
+
++No differences reported between the current version and backup '20\d\{6}a' of 'important.txt'.+
+
+Test: diff modified original with pred
+
++No differences reported between the current saved version and backup '20\d\{6}b' of 'important.txt'.+
+
+Test: diff pred with 2nd pred
+
++No differences reported between backup '20\d\{6}b' and backup '20\d\{6}a' of 'important.txt'.+
+
+Test: diff modified pred with 2nd pred
+
++No differences reported between saved backup '20\d\{6}b' and backup '20\d\{6}a' of 'important.txt'.+
