@@ -1,5 +1,4 @@
 +diff --invalid-argument ['"]important.txt.20080101b['"] ['"]important.txt['"]+
-Diff command failed; shell returned 2
 
 +diff -u ['"]important.txt.20080101b['"] ['"]important.txt['"]+
 
