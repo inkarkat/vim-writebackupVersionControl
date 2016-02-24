@@ -7,7 +7,7 @@ Test: Listing of differing case files from file's directory
 20061231a
 20070707ab
 20080101ab
-/The last backup was done \d\+ days ago\./
+/The last backup was done \d\+ years ago\./
 
 Test: Listing with a different CWD, new recent backup
 
