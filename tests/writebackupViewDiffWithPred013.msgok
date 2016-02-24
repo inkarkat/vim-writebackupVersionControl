@@ -1,0 +1,4 @@
++No differences reported between the current version and backup '20\d\{6}b' of 'important.txt'.+
+
+Test: diff output
++-u ['"]\?important\.txt\.20080101b['"]\? ['"]\?important\.txt['"]\?\s*+
