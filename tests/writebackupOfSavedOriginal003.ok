@@ -1,0 +1,83 @@
+.
+    [DIRECTORY]
+./another dir
+    [DIRECTORY]
+./another dir/some file.txt
+    -> just junk
+./backup
+    [DIRECTORY]
+./backup/someplace else.txt.20080124a
+    -> here
+./backup/someplace else.txt.20080124b
+    -> there
+./backup/someplace else.txt.20080124c
+    -> and everywhere
+./important.txt
+    -> current revision
+./important.txt.19990815a
+    -> it all started here
+./important.txt.20061201a
+    -> first revision
+./important.txt.20061231a
+    -> second revision
+./important.txt.20080101a
+    -> third revision
+./important.txt.20080101b
+    -> fourth revision
+./important.txt.XXXXXXXXa
+    -> fifth revision
+./important.txt.XXXXXXXXb
+    -> fifth revision
+./important.txt.XXXXXXXXc
+    -> fifth revision
+./important.txt.XXXXXXXXd
+    -> fifth revision
+./important.txt.XXXXXXXXe
+    -> fifth revision
+./important.txt.XXXXXXXXf
+    -> fifth revision
+./important.txt.XXXXXXXXg
+    -> fifth revision
+./important.txt.XXXXXXXXh
+    -> fifth revision
+./important.txt.XXXXXXXXi
+    -> fifth revision
+./important.txt.XXXXXXXXj
+    -> fifth revision
+./important.txt.XXXXXXXXk
+    -> fifth revision
+./important.txt.XXXXXXXXl
+    -> fifth revision
+./important.txt.XXXXXXXXm
+    -> fifth revision
+./important.txt.XXXXXXXXn
+    -> fifth revision
+./important.txt.XXXXXXXXo
+    -> fifth revision
+./important.txt.XXXXXXXXp
+    -> fifth revision
+./important.txt.XXXXXXXXq
+    -> fifth revision
+./important.txt.XXXXXXXXr
+    -> fifth revision
+./important.txt.XXXXXXXXs
+    -> fifth revision
+./important.txt.XXXXXXXXt
+    -> fifth revision
+./important.txt.XXXXXXXXu
+    -> fifth revision
+./important.txt.XXXXXXXXv
+    -> fifth revision
+./important.txt.XXXXXXXXw
+    -> fifth revision
+./important.txt.XXXXXXXXx
+    -> fifth revision
+./important.txt.XXXXXXXXy
+    -> fifth revision
+./important.txt.XXXXXXXXz
+    -> current revision
+./not important.txt
+    -> just junk
+./someplace else.txt
+    -> it's a song
+
