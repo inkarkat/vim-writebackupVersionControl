@@ -7,12 +7,7 @@ call vimtap#Plan(5)
 
 cd $TEMP/WriteBackupTest
 edit not\ important.txt
-try
-    WriteBackupDiffDaysChanges
-    call vimtap#Fail('expected error when no backups')
-catch
-    call vimtap#err#Thrown('No backups exist for this file.', 'error shown')
-endtry
+call vimtap#err#Errors('No backups exist for this file.', 'WriteBackupDiffDaysChanges', 'error shown')
 call vimtap#file#IsFilename('not important.txt', 'no backups')
 
 WriteBackup
