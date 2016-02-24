@@ -1,0 +1,19 @@
+Test: DiffWithPred fourth & original
+  diff
+  diff
+
+Test: WriteBackupGoPrev to third & original
+  diff
+  diff
+
+Test: WriteBackupGoPrev to first & original
+  diff
+  diff
+
+Test: WriteBackupGoNext to second & original
+  diff
+  diff
+
+Test: edit alternate file to second & original
+  diff
+  diff
