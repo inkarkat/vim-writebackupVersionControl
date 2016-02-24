@@ -1,4 +1,3 @@
-autoload/escapings.vim
 autoload/writebackupVersionControl.vim
 plugin/writebackupVersionControl.vim
 doc/writebackupVersionControl.txt
