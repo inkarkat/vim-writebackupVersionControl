@@ -1,4 +1,4 @@
-+diff --normal ['"]important\.txt\.20080101b['"] ['"]important\.txt['"]+
++diff --normal ['"]important\.txt\.20\d\{6}a['"] ['"]important\.txt['"]+
 
 Test: scratch buffer
   buftype=nowrite
