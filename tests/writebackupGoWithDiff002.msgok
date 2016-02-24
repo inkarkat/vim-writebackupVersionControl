@@ -1,0 +1,11 @@
+Test: DiffWithPred third & fourth
+  diff
+  diff
+
+Test: WriteBackupGoNext to third & third
+  diff
+  diff
+
+Test: WriteBackupGoOriginal
+  diff
+  diff
