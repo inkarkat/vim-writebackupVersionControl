@@ -15,12 +15,7 @@ WriteBackupGoNext
 call vimtap#file#IsFilespec('WriteBackupTest/backup/someplace else.txt.20080124c', 'GoNext')
 call vimtap#file#IsFile('GoNext')
 
-try
-    WriteBackupGoOriginal
-    call vimtap#Fail('expected error when going to original in another directory')
-catch
-    call vimtap#err#Thrown('Unable to determine the location of the original file.', 'error shown')
-endtry
+call vimtap#err#Errors('Unable to determine the location of the original file.', 'WriteBackupGoOriginal', 'error shown')
 " Note: Lookup in buffer list not yet implemented.
 "call vimtap#file#IsFilespec('WriteBackupTest/someplace else.txt', 'GoOriginal')
 "call vimtap#file#IsFile('GoOriginal')
