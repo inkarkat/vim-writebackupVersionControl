@@ -5,12 +5,7 @@ call vimtap#Plan(4)
 
 cd $TEMP/WriteBackupTest
 edit important.txt.20080101b
-try
-    WriteBackupOfSavedOriginal
-    call vimtap#Fail('expected error: Cannot backup a backup file')
-catch
-    call vimtap#err#Thrown('You can only backup the latest file version, not a backup file itself!', 'error shown')
-endtry
+call vimtap#err#Errors('You can only backup the latest file version, not a backup file itself!', 'WriteBackupOfSavedOriginal', 'error shown')
 
 edit important.txt
 let s:beforeEdit = getline(1)
