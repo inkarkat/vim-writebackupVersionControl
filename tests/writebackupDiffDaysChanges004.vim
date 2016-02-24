@@ -5,12 +5,7 @@ call vimtap#Plan(4)
 
 cd $TEMP/WriteBackupTest
 edit important.txt
-try
-    99WriteBackupDiffDaysChanges
-    call vimtap#Fail('expected error when no backup in day span')
-catch
-    call vimtap#err#Thrown("Couldn't locate a backup from up to 98 days ago: important.txt", 'error shown')
-endtry
+call vimtap#err#Errors("Couldn't locate a backup from up to 98 days ago: important.txt", '99WriteBackupDiffDaysChanges', 'error shown')
 call vimtap#file#IsFilename('important.txt', 'stay at original')
 
 9999WriteBackupDiffDaysChanges
