@@ -11,7 +11,7 @@ WriteBackup!
 echomsg 'Test: diff original with pred' 
 WriteBackupViewDiffWithPred
 
-call vimtap#file#IsFilespec('important.txt', 'still at original')
+call vimtap#file#IsFilename('important.txt', 'still at original')
 call vimtap#file#IsFile('still at original')
 call vimtap#Is(winnr('$'), 1, 'only original window') 
 
