@@ -1,0 +1,15 @@
+Test: set diffopt+=icase,iwhite
+
++diff -a -t -u -i -b ['"]important\.txt\.20080101b['"] ['"]important\.txt['"]+
+
+Test: passed additional arguments
+
++\Vdiff -a -t -c -F "revision" -I "^[\\\\t ]\\\\\\\\" \['"]important.txt.20080101b\['"] \['"]important.txt\['"]+
+
+Test: complex default arguments
+
++\Vdiff -a -t -c -F "foo" -I "^[\\\\t ]\\\\\\\\" \['"]important.txt.20080101b\['"] \['"]important.txt\['"]+
+
+Test: no arguments at all
+
++diff  ['"]important\.txt\.20080101b['"] ['"]important\.txt['"]+
