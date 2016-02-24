@@ -12,7 +12,7 @@ call MakeReadonly('important.txt')
 
 edit important.txt.20061231a
 WriteBackupRestoreThisBackup!
-call vimtap#file#IsFilespec('important.txt', 'RestoreThisBackup!')
+call vimtap#file#IsFilename('important.txt', 'RestoreThisBackup!')
 call vimtap#Is(getline(1), 'second revision', 'RestoreThisBackup! restored backup contents')
 call vimtap#file#IsFile('RestoreThisBackup!')
 " Really make sure that the restore didn't just change the buffer contents, but
