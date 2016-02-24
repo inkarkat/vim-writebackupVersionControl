@@ -1,0 +1,7 @@
+Test: buffer-local always and default arguments
+
++\Vdiff -F "foo" -I "^[\\\\t ]\\\\\\\\" -c \['"]important.txt.20080101b\['"] \['"]important.txt\['"]+
+
+Test: passed additional arguments; buffer-local always arguments
+
++\Vdiff -F "foo" -I "^[\\\\t ]\\\\\\\\" -y \['"]important.txt.20080101b\['"] \['"]important.txt\['"]+
