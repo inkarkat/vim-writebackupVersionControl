@@ -10,7 +10,7 @@ saveas important.txt.20070707B
 %s/EXTENSION/MiXed/
 saveas imPOrtANT.txt.20061212a
 edit important.txt
-if len(split(glob('important.txt.*'), "\n")) < 8
+if len(ingo#compat#glob('important.txt.*', 0, 1)) < 8
     call vimtest#Skip('This file system is case-sensitive.')
     call vimtest#Quit()
 endif
