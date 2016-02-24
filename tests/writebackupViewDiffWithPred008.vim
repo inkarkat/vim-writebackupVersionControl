@@ -24,7 +24,7 @@ call vimtap#window#IsWindows(['important.txt.diff [Scratch]', 'important.txt', '
 wincmd b
 lcd ..
 2WriteBackupViewDiffWithPred
-call vimtap#file#IsFilespec('important.txt.diff [Scratch]', 'scratch buffer 2')
+call vimtap#file#IsFilename('important.txt.diff [Scratch]', 'scratch buffer 2')
 call vimtap#file#IsNoFile('scratch buffer 2')
 call vimtap#window#IsWindows(['important.txt.diff [Scratch]', 'WriteBackupTest/important.txt.diff [Scratch]', 'WriteBackupTest/important.txt', 'WriteBackupTest/important.txt.20080101a'], 'original, 2nd predecessor, diff and ../diff scratch buffers')
 
