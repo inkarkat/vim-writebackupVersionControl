@@ -1,4 +1,4 @@
 User: PLEASE PRESS 'Yes'
 Really delete backup '20080101b'?
 [N]o, (Y)es: 
-Cannot delete readonly backup '20080101b' (add ! to override)
+Vim(echoerr):Cannot delete readonly backup '20080101b' (add ! to override)
