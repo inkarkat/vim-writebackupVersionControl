@@ -14,7 +14,7 @@ echomsg getline(1)
 call vimtap#Is('diff', &l:filetype, 'diff filetype on diff scratch buffer')
 
 wincmd w
-call vimtap#file#IsFilespec('important.txt', 'still at original')
+call vimtap#file#IsFilename('important.txt', 'still at original')
 call vimtap#file#IsFile('still at original')
 call vimtap#Is(winnr('$'), 2, 'only original and diff scratch buffer windows')
 
