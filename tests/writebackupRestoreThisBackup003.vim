@@ -9,12 +9,7 @@ cd $TEMP/WriteBackupTest
 call MakeReadonly('important.txt')
 
 edit important.txt.20061231a
-try
-    WriteBackupRestoreThisBackup
-    call vimtap#Fail('expected error: Cannot overwrite readonly original')
-catch
-    call vimtap#err#Thrown("Cannot overwrite readonly 'important.txt' (add ! to override)", 'error shown')
-endtry
+call vimtap#err#Errors("Cannot overwrite readonly 'important.txt' (add ! to override)", 'WriteBackupRestoreThisBackup', 'error shown')
 call vimtap#file#IsFilename('important.txt.20061231a', 'RestoreThisBackup over readonly original fails')
 
 call vimtest#Quit()
