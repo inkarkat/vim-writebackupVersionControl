@@ -7,12 +7,7 @@ call vimtap#Plan(8)
 
 cd $TEMP/WriteBackupTest
 edit important.txt.19990815a
-try
-    WriteBackupDiffWithPred
-    call vimtap#Fail('expected error when no predecessor')
-catch
-    call vimtap#err#Thrown('This is the earliest backup: important.txt.19990815a', 'error shown')
-endtry
+call vimtap#err#Errors('This is the earliest backup: important.txt.19990815a', 'WriteBackupDiffWithPred', 'error shown')
 call vimtap#file#IsFilename('important.txt.19990815a', 'no predecessor')
 
 edit important.txt
