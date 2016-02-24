@@ -1,9 +1,3 @@
-Test: Cannot check backup status of backup file
-You can only check the backup status of the original file, not of backups!
-
-Test: No backup exists
-No backups exist for this file.
-
 Test: Differing backup
 The current version of 'important.txt' is different from the latest backup '20080101b'.
 
@@ -15,4 +9,3 @@ Test: Saved identical
 
 Test: Backup differing only in file contents, not size
 +\VThe current version of 'important.txt' is different from the latest backup '20\d\{6}a'.+
-
