@@ -18,19 +18,9 @@ WriteBackup
 
 " Prune the PATH so that the 'cmp' or 'diff' executable isn't found.
 let $PATH = '.'
-try
-    WriteBackupIsBackedUp
-    call vimtap#Fail('expected error when diff not in PATH')
-catch
-    call vimtap#err#ThrownLike("Encountered problems with '\\%(cmp\\|diff\\).*' invocation. Unable to compare with latest backup.", 'error shown')
-endtry
+call vimtap#err#ErrorsLike("Encountered problems with '\\%(cmp\\|diff\\).*' invocation. Unable to compare with latest backup.", 'WriteBackupIsBackedUp', 'error shown')
 
 let g:WriteBackup_CompareShellCommand = 'doesnotexist -xyz'
-try
-    WriteBackupIsBackedUp
-    call vimtap#Fail('expected error with doesnotexist compare command')
-catch
-    call vimtap#err#Thrown("Encountered problems with 'doesnotexist -xyz' invocation. Unable to compare with latest backup.", 'error shown')
-endtry
+call vimtap#err#Errors("Encountered problems with 'doesnotexist -xyz' invocation. Unable to compare with latest backup.", 'WriteBackupIsBackedUp', 'error shown')
 
 call vimtest#Quit()
