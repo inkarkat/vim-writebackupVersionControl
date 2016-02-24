@@ -20,6 +20,10 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   3.22.046	26-May-2015	:WriteBackupViewDiffWithPred: Keep the same
+"				'iskeyword' value as the original buffer's.
+"				Makes it easier to search across diff and
+"				original with |star|.
 "   3.22.045	23-Apr-2015	ingo#buffer#scratch#Create() from
 "				ingo-library.vim version 1.024 doesn't position
 "				the cursor on the first line any more;
@@ -894,6 +898,9 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	" Keep the same 'fileformat' as the original buffer's. This matters when
 	" the diff is persisted as a patch.
 	let l:originalFileformat = &l:fileformat
+	" Keep the same 'iskeyword' value as the original buffer's. Makes it
+	" easier to search across diff and original with |star|.
+	let l:originalIskeyword = &l:iskeyword
 
 	" Note: For the :! command, the '!' character must be escaped (cp.
 	" shellescape() with {special}); we assume that in the diff options,
@@ -918,6 +925,7 @@ function! writebackupVersionControl#ViewDiff( filespec, count, diffOptions, GetV
 	call cursor(1, 1)   " The :1read ! command positions the cursor on the last read line, but we either want the cursor at the start of the buffer, or at the original position (which we've saved in l:save_cursor already).
 
 	let &l:fileformat = l:originalFileformat    " XXX: Cannot set the fileformat with :new ++fileformat= in Vim 7.3, though the documentation says it should work.
+	let &l:iskeyword = l:originalIskeyword
 
 	let l:status = 1
 	if v:shell_error < 0 || v:shell_error > 1
