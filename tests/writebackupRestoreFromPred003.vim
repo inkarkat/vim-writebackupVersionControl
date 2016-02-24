@@ -7,12 +7,7 @@ call vimtap#Plan(4)
 
 cd $TEMP/WriteBackupTest
 edit important.txt.20080101b
-try
-    WriteBackupRestoreFromPred!
-    call vimtap#Fail('expected error: Cannot restore from backup file')
-catch
-    call vimtap#err#Thrown('You can only restore the original file, not a backup!', 'error shown')
-endtry
+call vimtap#err#Errors('You can only restore the original file, not a backup!', 'WriteBackupRestoreFromPred!', 'error shown')
 
 edit important.txt
 WriteBackupRestoreFromPred!
