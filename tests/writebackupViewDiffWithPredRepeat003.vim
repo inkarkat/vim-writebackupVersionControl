@@ -1,11 +1,11 @@
-" Test keeping cursor position when repeating view diff in the scratch buffer. 
+" Test keeping cursor position when repeating view diff in the scratch buffer.
 
 call vimtest#StartTap()
 call vimtap#Plan(4)
 
 cd $TEMP/WriteBackupTest
 edit important.txt
-" Create a longer diff. 
+" Create a longer diff.
 %yank
 put!
 redir @"
@@ -34,5 +34,4 @@ wincmd w
 call vimtap#Isnt([line('.'), col('.')], s:position, 'Moved to first line when repeating diff from original file')
 call vimtap#Is([line('.'), col('.')], [1,1], 'Moved to first line when repeating diff from original file')
 
-call vimtest#Quit() 
-
+call vimtest#Quit()
