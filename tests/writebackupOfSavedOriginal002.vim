@@ -10,11 +10,6 @@ edit important.txt
 for i in range(1, 26)
     WriteBackup!
 endfor
-try
-    WriteBackupOfSavedOriginal
-    call vimtap#Fail('expected error: Exhausted all backup filenames')
-catch
-    call vimtap#err#Thrown('Ran out of backup file names', 'error shown')
-endtry
+call vimtap#err#Errors('Ran out of backup file names', 'WriteBackupOfSavedOriginal', 'error shown')
 
 call vimtest#Quit()
