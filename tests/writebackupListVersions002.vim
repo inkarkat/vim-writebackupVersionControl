@@ -8,7 +8,7 @@ cd $TEMP/WriteBackupTest
 if ingo#os#IsWinOrDos()
     call vimtest#System('call unix --quiet && touch --date=+45seconds important.txt.20080101b')
 else
-    call vimtest#System('touch --date=+45seconds important.txt.20080101b')
+    call vimtest#System('touch --date=+45seconds important.txt.20080101b || touch -t $(date +%m%d%H%M.59) important.txt.20080101b')
 endif
 
 edit important.txt
