@@ -16,12 +16,7 @@ wincmd h
 call vimtap#file#IsFilename('important.txt.19990815a', 'start revision to the left')
 call vimtap#window#IsWindows( map(['.19990815a', '.20080101a', ''], '"important.txt" . v:val'), 'DiffWithPred start & third & original')
 
-try
-    WriteBackupDiffWithPred 4
-    call vimtap#Fail('expected error when no 4th predecessor')
-catch
-    call vimtap#err#Thrown('This is the earliest backup: important.txt.19990815a', 'error shown')
-endtry
+call vimtap#err#Errors('This is the earliest backup: important.txt.19990815a', 'WriteBackupDiffWithPred 4', 'error shown')
 call vimtap#file#IsFilename('important.txt.19990815a', 'no predecessor')
 
 call vimtest#Quit()
