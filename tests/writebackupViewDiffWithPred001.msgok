@@ -8,3 +8,4 @@ noswapfile
   readonly
   modifiable
 nomodified
+  filetype=diff
