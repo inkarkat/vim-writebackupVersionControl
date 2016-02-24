@@ -1,15 +1,6 @@
-Test: No predecessor
-This is the earliest backup: important.txt.19990815a
-
-Test: No backup from today
-Couldn't locate a backup from today: important.txt
-
 Test: DiffDaysChanges third & current
   diff
   diff
-
-Test: DiffDaysChanges no more backups
-This is the day's earliest backup: important.txt.20080101a
 
 Test: DiffDaysChanges third & fourth
   diff
