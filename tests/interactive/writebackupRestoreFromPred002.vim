@@ -1,6 +1,6 @@
-" Test failed restore from predecessor. 
+" Test failed restore from predecessor.
 
-source helpers/file.vim
+source ../helpers/file.vim
 
 call vimtest#StartTap()
 call vimtap#Plan(3)
@@ -16,5 +16,4 @@ call vimtap#file#IsFilename('important.txt', 'RestoreFromPred')
 call vimtap#file#IsFile('RestoreFromPred')
 call vimtap#Is(getline(1), 'current revision', 'RestoreFromPred current contents')
 
-call vimtest#Quit() 
-
+call vimtest#Quit()
