@@ -9,12 +9,7 @@ call vimtap#Plan(9)
 
 cd $TEMP/WriteBackupTest
 edit important.txt
-try
-    WriteBackupRestoreThisBackup
-    call vimtap#Fail('expected error on original file')
-catch
-    call vimtap#err#Thrown('You can only restore backup files!', 'error shown')
-endtry
+call vimtap#err#Errors('You can only restore backup files!', 'WriteBackupRestoreThisBackup', 'error shown')
 
 edit important.txt.20061231a
 call vimtest#RequestInput('No')
