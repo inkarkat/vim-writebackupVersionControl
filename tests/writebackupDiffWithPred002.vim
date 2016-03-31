@@ -12,9 +12,9 @@ edit important.txt
 " This creates a discrepancy between the relative filespec and the CWD. 
 cd ..
 WriteBackupDiffWithPred
-call vimtap#file#IsFilespec('important.txt', 'stay at original')
+call vimtap#file#IsFilename('important.txt', 'stay at original')
 wincmd h
-call vimtap#file#IsFilespec('important.txt.20080101b', 'fourth revision to the left')
+call vimtap#file#IsFilename('important.txt.20080101b', 'fourth revision to the left')
 " Resulting in a wrong pathspec to the backup file here. 
 call vimtap#file#IsNoFile('fourth revision to the left')
 
