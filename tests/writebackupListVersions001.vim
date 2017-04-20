@@ -1,4 +1,6 @@
-" Test listing of backups. 
+" Test listing of backups.
+
+call vimtest#SkipAndQuitIf(! isdirectory($VIM), '$VIM (' . $VIM . ') does not exist')
 
 cd $TEMP/WriteBackupTest
 edit not\ important.txt
@@ -15,5 +17,5 @@ cd $VIM
 WriteBackup
 WriteBackupListVersions
 
-call vimtest#Quit() 
+call vimtest#Quit()
 
