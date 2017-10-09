@@ -1,4 +1,4 @@
-" Test view diff of todays changes. 
+" Test view diff of todays changes.
 
 call vimtest#StartTap()
 call vimtap#Plan(15)
@@ -38,4 +38,4 @@ call vimtap#file#IsFilename('important.txt', 'still at original')
 call vimtap#file#IsFile('still at original')
 call vimtap#Is(winnr('$'), 2, 'only original and reused diff scratch buffer windows')
 
-call vimtest#Quit() 
+call vimtest#Quit()
