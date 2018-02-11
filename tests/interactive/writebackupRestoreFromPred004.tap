@@ -1,0 +1,7 @@
+1..6
+ok 1 - 2RestoreFromPred
+ok 2 - 2RestoreFromPred (file exists)
+ok 3 - 2RestoreFromPred 2nd predecessor's contents
+ok 4 - 999RestoreFromPred
+ok 5 - 999RestoreFromPred (file exists)
+ok 6 - 999RestoreFromPred start revision's contents
