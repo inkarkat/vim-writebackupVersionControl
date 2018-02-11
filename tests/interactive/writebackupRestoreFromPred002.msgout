@@ -1,0 +1,26 @@
+
+Executing shell command: setup
+Archive:  /home/inkarkat/Unixhome/.vim/tests/WriteBackup/testdata.zip
+   creating: /tmp/WriteBackupTest/another dir/
+  inflating: /tmp/WriteBackupTest/another dir/some file.txt  
+   creating: /tmp/WriteBackupTest/backup/
+  inflating: /tmp/WriteBackupTest/backup/someplace else.txt.20080124a  
+  inflating: /tmp/WriteBackupTest/backup/someplace else.txt.20080124b  
+  inflating: /tmp/WriteBackupTest/backup/someplace else.txt.20080124c  
+  inflating: /tmp/WriteBackupTest/important.txt  
+  inflating: /tmp/WriteBackupTest/important.txt.19990815a  
+  inflating: /tmp/WriteBackupTest/important.txt.20061201a  
+  inflating: /tmp/WriteBackupTest/important.txt.20061231a  
+  inflating: /tmp/WriteBackupTest/important.txt.20080101a  
+  inflating: /tmp/WriteBackupTest/important.txt.20080101b  
+  inflating: /tmp/WriteBackupTest/not important.txt  
+  inflating: /tmp/WriteBackupTest/someplace else.txt  
+
+"important.txt" 
+"important.txt" 2L, 28C
+Executing shell command: chmod -w 'important.txt'
+
+User: PLEASE PRESS 'Yes'
+Error detected while processing /home/inkarkat/Unixhome/.vim/tests/WriteBackup/interactive/writebackupRestoreFromPred002.vim:
+line   14:
+Cannot overwrite readonly 'important.txt' (add ! to override)
