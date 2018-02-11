@@ -1,0 +1,10 @@
+1..9
+ok 1 - error shown
+ok 2 - RestoreThisBackup - N
+ok 3 - RestoreThisBackup - N current contents kept
+ok 4 - Assert that file's modification date is newer than that of backup file
+ok 5 - RestoreThisBackup - Y
+ok 6 - RestoreThisBackup - Y restored backup contents
+ok 7 - RestoreThisBackup - Y (file exists)
+ok 8 - Restored file's modification date is equal to backup's modification date
+ok 9 - RestoreThisBackup - Y restored backup contents on disk
