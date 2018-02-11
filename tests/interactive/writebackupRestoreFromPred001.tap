@@ -1,0 +1,8 @@
+1..7
+ok 1 - error shown
+ok 2 - RestoreFromPred - N
+ok 3 - RestoreFromPred - N (file exists)
+ok 4 - RestoreFromPred - N current contents
+ok 5 - RestoreFromPred - Y
+ok 6 - RestoreFromPred - Y (file exists)
+ok 7 - RestoreFromPred - Y predecessor's contents
