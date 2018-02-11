@@ -1,0 +1,4 @@
+1..3
+ok 1 - error shown
+ok 2 - last backup still exists
+ok 3 - last backup was removed
