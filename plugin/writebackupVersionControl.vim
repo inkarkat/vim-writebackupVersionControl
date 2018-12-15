@@ -12,13 +12,19 @@
 "   - External command "cmp", "diff" or equivalent for comparison
 "   - External command "diff" or equivalent for listing of differences
 "
-" Copyright: (C) 2007-2013 Ingo Karkat
+" Copyright: (C) 2007-2014 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 let s:version = 321
 " REVISION	DATE		REMARKS
+"   3.22.037	06-May-2014	Make Unix 'cp' command configurable via
+"				g:WriteBackupCopyShellCommand.
+"				Support non-GNU cp command (e.g. on BSD) that
+"				doesn't support the --preserve=timestamp
+"				argument by making it configurable
+"				(g:WriteBackupCopyPreserveArgument).
 "   3.21.036	26-Jun-2013	Implement abort on error for all commands.
 "   3.20.035	14-Dec-2012	Make message for missing writebackup.vim plugin
 "				more precise.
@@ -212,6 +218,14 @@ endif
 " arguments are passed to the :WriteBackupViewDiffWithPred command.
 if ! exists('g:WriteBackup_DiffCreateDefaultArguments')
     let g:WriteBackup_DiffCreateDefaultArguments = '-u'
+endif
+
+if ! exists('g:WriteBackupCopyShellCommand')
+    " Note: This isn't used on Windows.
+    let g:WriteBackupCopyShellCommand = 'cp'
+endif
+if ! exists('g:WriteBackupCopyPreserveArgument')
+    let g:WriteBackupCopyPreserveArgument = '--preserve=timestamps'
 endif
 
 " Vim command modifiers (:topleft, :belowright, :vertical, etc.) applied when
