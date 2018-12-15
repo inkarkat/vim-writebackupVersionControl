@@ -251,6 +251,11 @@ HISTORY					   *WriteBackupVersionControl-history*
 - :WriteBackupViewDiffWithPred: Keep the same 'iskeyword' value as the
   original buffer's. Makes it easier to search across diff and original with
   |star|.
+- Inconsistency: :WriteBackupOfSavedOriginal keeps executable attributes,
+  whereas :WriteBackup normally doesn't. The general discrepancy is that the
+  'cp' command by default preserves the attributes, whereas a :write from
+  within Vim doesn't. Add --no-preserve=mode to
+  g:WriteBackupCopyPreserveArgument.
   *** You need to update to ingo-library (vimscript #4433) version 1.022! ***
 
 3.21	29-Jan-2014
@@ -404,7 +409,7 @@ Added documentation. First release.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2007-2015 Ingo Karkat
+Copyright: (C) 2007-2018 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
