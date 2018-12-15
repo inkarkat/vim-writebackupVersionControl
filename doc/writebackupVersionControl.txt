@@ -248,6 +248,9 @@ HISTORY					   *WriteBackupVersionControl-history*
   position the cursor on the first line any more; explicitly do this, as the
   alternative condition of the potential original cursor position restore
   depends on this.
+- :WriteBackupViewDiffWithPred: Keep the same 'iskeyword' value as the
+  original buffer's. Makes it easier to search across diff and original with
+  |star|.
   *** You need to update to ingo-library (vimscript #4433) version 1.022! ***
 
 3.21	29-Jan-2014
