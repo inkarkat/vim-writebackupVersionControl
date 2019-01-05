@@ -12,13 +12,20 @@
 "   - External command "cmp", "diff" or equivalent for comparison
 "   - External command "diff" or equivalent for listing of differences
 "
-" Copyright: (C) 2007-2014 Ingo Karkat
+" Copyright: (C) 2007-2018 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 let s:version = 321
 " REVISION	DATE		REMARKS
+"   3.22.038	16-Dec-2018	Inconsistency: :WriteBackupOfSavedOriginal keeps
+"                               executable attributes, whereas :WriteBackup
+"                               normally doesn't. The general discrepancy is
+"                               that the 'cp' command by default preserves the
+"                               attributes, whereas a :write from within Vim
+"                               doesn't. Add --no-preserve=mode to
+"                               g:WriteBackupCopyPreserveArgument.
 "   3.22.037	06-May-2014	Make Unix 'cp' command configurable via
 "				g:WriteBackupCopyShellCommand.
 "				Support non-GNU cp command (e.g. on BSD) that
@@ -225,7 +232,7 @@ if ! exists('g:WriteBackupCopyShellCommand')
     let g:WriteBackupCopyShellCommand = 'cp'
 endif
 if ! exists('g:WriteBackupCopyPreserveArgument')
-    let g:WriteBackupCopyPreserveArgument = '--preserve=timestamps'
+    let g:WriteBackupCopyPreserveArgument = '--preserve=timestamps --no-preserve=mode'
 endif
 
 " Vim command modifiers (:topleft, :belowright, :vertical, etc.) applied when
