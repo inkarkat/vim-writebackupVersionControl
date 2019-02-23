@@ -12,13 +12,22 @@
 "   - External command "cmp", "diff" or equivalent for comparison
 "   - External command "diff" or equivalent for listing of differences
 "
-" Copyright: (C) 2007-2018 Ingo Karkat
+" Copyright: (C) 2007-2019 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 let s:version = 321
 " REVISION	DATE		REMARKS
+"   3.22.039	06-Jan-2019	:WriteBackupOfSavedOriginal still keeps
+"                               executable attributes, because
+"                               writebackupVersionControl#WriteBackupOfSavedOriginal()
+"                               invokes s:Copy() with a:isKeepModificationDate =
+"                               0, and then the
+"                               g:WriteBackupCopyPreserveArgument isn't used.
+"                               Move the --no-preserve=mode to
+"                               g:WriteBackupCopyShellCommand instead, to have
+"                               it applied unconditionally.
 "   3.22.038	16-Dec-2018	Inconsistency: :WriteBackupOfSavedOriginal keeps
 "                               executable attributes, whereas :WriteBackup
 "                               normally doesn't. The general discrepancy is
@@ -229,10 +238,10 @@ endif
 
 if ! exists('g:WriteBackupCopyShellCommand')
     " Note: This isn't used on Windows.
-    let g:WriteBackupCopyShellCommand = 'cp'
+    let g:WriteBackupCopyShellCommand = 'cp --no-preserve=mode'
 endif
 if ! exists('g:WriteBackupCopyPreserveArgument')
-    let g:WriteBackupCopyPreserveArgument = '--preserve=timestamps --no-preserve=mode'
+    let g:WriteBackupCopyPreserveArgument = '--preserve=timestamps'
 endif
 
 " Vim command modifiers (:topleft, :belowright, :vertical, etc.) applied when
