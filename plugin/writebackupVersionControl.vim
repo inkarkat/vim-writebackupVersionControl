@@ -20,21 +20,21 @@
 let s:version = 321
 " REVISION	DATE		REMARKS
 "   3.22.039	06-Jan-2019	:WriteBackupOfSavedOriginal still keeps
-"                               executable attributes, because
-"                               writebackupVersionControl#WriteBackupOfSavedOriginal()
-"                               invokes s:Copy() with a:isKeepModificationDate =
-"                               0, and then the
-"                               g:WriteBackupCopyPreserveArgument isn't used.
-"                               Move the --no-preserve=mode to
-"                               g:WriteBackupCopyShellCommand instead, to have
-"                               it applied unconditionally.
+"				executable attributes, because
+"				writebackupVersionControl#WriteBackupOfSavedOriginal()
+"				invokes s:Copy() with a:isKeepModificationDate =
+"				0, and then the
+"				g:WriteBackupCopyPreserveArgument isn't used.
+"				Move the --no-preserve=mode to
+"				g:WriteBackupCopyShellCommand instead, to have
+"				it applied unconditionally.
 "   3.22.038	16-Dec-2018	Inconsistency: :WriteBackupOfSavedOriginal keeps
-"                               executable attributes, whereas :WriteBackup
-"                               normally doesn't. The general discrepancy is
-"                               that the 'cp' command by default preserves the
-"                               attributes, whereas a :write from within Vim
-"                               doesn't. Add --no-preserve=mode to
-"                               g:WriteBackupCopyPreserveArgument.
+"				executable attributes, whereas :WriteBackup
+"				normally doesn't. The general discrepancy is
+"				that the 'cp' command by default preserves the
+"				attributes, whereas a :write from within Vim
+"				doesn't. Add --no-preserve=mode to
+"				g:WriteBackupCopyPreserveArgument.
 "   3.22.037	06-May-2014	Make Unix 'cp' command configurable via
 "				g:WriteBackupCopyShellCommand.
 "				Support non-GNU cp command (e.g. on BSD) that
