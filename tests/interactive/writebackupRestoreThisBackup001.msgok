@@ -6,4 +6,4 @@ Restore canceled.
 User: PLEASE PRESS 'Yes'
 Really override 'important.txt' with this backup '20061231a'?
 [N]o, (Y)es: 
-"important.txt" 
+/^"important\.txt".*/
