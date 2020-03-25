@@ -1,4 +1,0 @@
-1..3
-ok 1 - RestoreFromPred
-ok 2 - RestoreFromPred (file exists)
-ok 3 - RestoreFromPred current contents
