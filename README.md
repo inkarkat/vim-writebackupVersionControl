@@ -223,7 +223,7 @@ https://github.com/inkarkat/vim-writebackupVersionControl/issues or email
 HISTORY
 ------------------------------------------------------------------------------
 
-##### 3.22    RELEASEME
+##### 3.22    02-Apr-2020
 - FIX: Avoid "E16: Invalid range" in
   writebackupVersionControl#GetAllBackupsForFile() with a filename containing
   "[[" by escaping the filespec for wildcard characters.
